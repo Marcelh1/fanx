@@ -2,9 +2,6 @@
 #include <Arduino.h>
 #include "cc1101.h"
 
-// Note! Patch in Firmata.cpp to wait for Serial ready: TBD
-// while(!Serial);
-
 // the minimum interval for sampling analog input
 #define MINIMUM_SAMPLING_INTERVAL   1
 
