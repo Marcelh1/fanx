@@ -1,4 +1,5 @@
 # Open source FanX RF Dongle 
+[Get one FanX RF Dongle here!](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/)
 Wireless USB Dongle for home automation systems to improve the indoor air quality.
 
 ![usb dongle](https://github.com/Marcelh1/fanx/blob/main/high_q.png)
