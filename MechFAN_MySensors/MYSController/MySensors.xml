@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MySensors>
+  <Application>
+    <Name>MYSController</Name>
+    <Version>1.0.0</Version>
+    <Timestamp>19-9-2022 19:41:45</Timestamp>
+    <Datamodel>1.0.0</Datamodel>
+  </Application>
+  <Nodes>
+    <Node>
+      <ID>0</ID>
+      <Sketch>FanX</Sketch>
+      <Version>1.0</Version>
+      <Sensebender>0</Sensebender>
+      <MYSBootloader>0</MYSBootloader>
+      <Battery>0</Battery>
+      <BatteryLevel>255</BatteryLevel>
+      <LastSeen>19-9-2022 18:46:23</LastSeen>
+      <MessageCount>15</MessageCount>
+      <LastReboot>19-9-2022 18:46:23</LastReboot>
+      <BootloaderVersion>65535</BootloaderVersion>
+      <Sensors>
+        <Sensor>
+          <ID>255</ID>
+          <Type>17</Type>
+          <Description>2.3.2</Description>
+          <LastSeen>19-9-2022 18:46:23</LastSeen>
+          <MessageCount>8</MessageCount>
+        </Sensor>
+        <Sensor>
+          <ID>1</ID>
+          <Type>4</Type>
+          <Description>FanX</Description>
+          <LastSeen>19-9-2022 18:46:23</LastSeen>
+          <MessageCount>7</MessageCount>
+        </Sensor>
+      </Sensors>
+    </Node>
+    <Node>
+      <ID>255</ID>
+      <Sketch>Broadcast</Sketch>
+      <Version></Version>
+      <Sensebender>0</Sensebender>
+      <MYSBootloader>0</MYSBootloader>
+      <Battery>0</Battery>
+      <BatteryLevel>255</BatteryLevel>
+      <LastSeen>30-12-1899</LastSeen>
+      <MessageCount>0</MessageCount>
+      <LastReboot>30-12-1899</LastReboot>
+      <BootloaderVersion>65535</BootloaderVersion>
+      <Sensors/>
+    </Node>
+  </Nodes>
+</MySensors>
