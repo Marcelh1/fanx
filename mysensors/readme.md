@@ -2,3 +2,6 @@
 Use these settings:
 - MySensors version: 2.3.2
 - Baudrate: 38400 bps
+
+# MySensors Arduino LIB
+In the library manager, install MySensors lib.
