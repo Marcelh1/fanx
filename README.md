@@ -11,7 +11,7 @@ V1.0 = Arduino micro
 
 V2.0 = Sparkfun micro pro
 
-If the wrong target was selected during upload, the dongle will not be recognised by Windows anymore, you have to give a short reset pulse by short circuiting the reset pin with ground on the 6p connector when Arduino is trying to upload the code. This will put the Dongle into bootloader mode for few seconds. Check the assigned com port first after giving the first reset pulse (or double pulse to have some more time). 
+If the wrong target was selected during upload, the dongle will not be recognised by Windows anymore, you have to give a short reset pulse by short circuiting the reset pin with ground on the 6p connector just before Arduino is trying to upload the code. This will put the Dongle into bootloader mode for few seconds. Check the assigned com port first after giving the first reset pulse (or double pulse to have some more time). 
 
 
 # General
