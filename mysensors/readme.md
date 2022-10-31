@@ -6,3 +6,6 @@ Use these settings:
 
 # MySensors Arduino LIB
 In the library manager, install MySensors lib.
+
+# Home Assistant
+Check the MySensors_YAML.txt file for the YAML script that you can use in Home Assistant.
