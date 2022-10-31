@@ -17,9 +17,10 @@ If the wrong target was selected during upload, the dongle will not be recognise
 # General
 
 The repository contains three folders:
-- standalone
-- firmata
-- bootloaders
+- Standalone
+- Firmata
+- MySensors
+- Bootloaders
 
 # Standalone version
 The "standalone" is the most basic version to communicate with the ventilation unit, after powering the USB dongle, it will stay in "clone mode" for 5sec, when you press a button on the RF15 remote control, the addresses will be cloned. If no button pressed within 5sec, it will use previous stored address in eeprom. The addresses will be stored in eeprom so that it is not forgotten during power off. Open a terminal to see the debug messages, use settings: **9600bps,none,8,1**. If the FAN speed is changed by the stock remote, it will report that FAN speed has been changed. Use the function: **radio.tx_orcon(uint8_t fan_speed)** to transmit a new FAN speed.
@@ -48,5 +49,14 @@ Also the Firmata version will support "clone mode" for the frst 5sec. To be able
 You can add custom card to the Lovelace front panel like this:
 
 ![custom card](https://tweakers.net/i/92_YFrTlCgnYt5MYhOnoPeuxj60=/full-fit-in/4000x4000/filters:no_upscale():fill(white):strip_exif()/f/image/rBX8e7hh46UIrR00872p1JKJ.png?f=user_large)
+
+# MySensors version
+The "MySensors" version is able to communicate with home automation systems like "Home Assistant" and "Domoticz". You have to configure it like this:
+
+MySensors version: 2.3.2
+Serial connection
+Baudrate: 38400 bps
+
+In the Arduino library manager, install the MySensors lib before uploading the Sketch.
 
 [Get one FanX RF Dongle here!](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/)
