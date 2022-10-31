@@ -53,9 +53,9 @@ You can add custom card to the Lovelace front panel like this:
 # MySensors version
 The "MySensors" version is able to communicate with home automation systems like "Home Assistant" and "Domoticz". You have to configure it like this:
 
-MySensors version: 2.3.2
-Serial connection
-Baudrate: 38400 bps
+- MySensors version: 2.3.2
+- Serial connection
+- Baudrate: 38400 bps
 
 In the Arduino library manager, install the MySensors lib before uploading the Sketch.
 
