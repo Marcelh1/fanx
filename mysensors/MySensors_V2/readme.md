@@ -1,4 +1,4 @@
-# This is beta version for testing purposes
+# This is a beta version for testing purposes
 
 The low level eeprom read/write for storing the ventilation address was removed, this version makes use of MySensors eeprom write/read functions to prevent conflicts:
 - loadState
