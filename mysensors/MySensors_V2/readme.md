@@ -9,5 +9,5 @@ The dongle will not go into clone mode each restart anymore, it will check for a
 If cloning was succesful, the dongle will go into normal operation, the led will blink each 5 seconds to notify the user of active communication. If the cloning was not succesful, the led will constantly show a doubleblink pattern and the dongle will do nothing else. 
 
 There are two ways to exit the doubleblink pattern mode:
-1. Power cycle the dongle, it will read stored address in eeprom at start
+1. Power cycle the dongle, it will read (previous) stored address in eeprom at start
 2. Activate the clone switch in Home Assistant again to retry
