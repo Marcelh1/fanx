@@ -1,6 +1,6 @@
 # This is beta version for testing purposes
 
-The low level eeprom read/write was removed, this version makes use of MySensors eeprom write/read functions to prevent conflicts:
+The low level eeprom read/write for ventilation address was removed, this version makes use of MySensors eeprom write/read functions to prevent conflicts:
 - loadState
 - SaveState
 
