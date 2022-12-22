@@ -28,7 +28,6 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include <EEPROM.h>
 
 /**
  * Carrier frequencies
@@ -306,7 +305,8 @@ class CC1101
 		uint8_t fan_speed;
 		uint8_t humidity;
 		uint8_t airflow;
-		uint8_t temperature;		
+		uint8_t temperature;	
+		uint8_t address[6];
 	};
 
 	datapoints orcon_state;

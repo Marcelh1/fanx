@@ -237,13 +237,13 @@ bool CC1101::clone_mode(void)
 						{
 							// Clone and store RF15 address in EEPROM
 							for (uint8_t i = 1; i < 7; i++)
-								EEPROM.update(i - 1, dataframe_decoded[i]);
+								orcon_state.address[i-1] = dataframe_decoded[i];								
 							
 							rf15_frame_valid = true;							
 						}
 						else
 						{
-							//Serial.println("> CRC Error!");
+							//Serial.println("> CRC Error!");											
 						}
 					}
 				}
@@ -399,7 +399,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 							orcon_frame_valid = true;
 							for (uint8_t i = 4; i < 7; i++)
 							{
-								if (dataframe_decoded[i] != EEPROM.read(i - 1))
+								if (dataframe_decoded[i] != orcon_state.address[i-1])
 									orcon_frame_valid = false;
 							}
 
@@ -452,7 +452,7 @@ bool CC1101::tx_orcon(uint8_t fan_speed)
 
 	// Get souce and target address
 	for (uint8_t i = 1; i < 7; i++)
-		payload[i] = EEPROM.read(i - 1);
+		payload[i] = orcon_state.address[i-1];
 
 	// Opcode[FAN speed status]
 	payload[7] = 0x22;
@@ -484,7 +484,7 @@ uint8_t CC1101::request_orcon_state(void)
 
 	// Get souce and target address
 	for (uint8_t i = 1; i < 7; i++)
-		payload[i] = EEPROM.read(i - 1);
+		payload[i] = orcon_state.address[i-1];
 
 	// Opcode[FAN speed status]
 	payload[7] = 0x31;
