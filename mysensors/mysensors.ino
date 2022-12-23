@@ -93,6 +93,7 @@ void loop()
   static uint8_t tx_retry_cntr = 0;
   static unsigned long req_current_millis = 0;
   static unsigned long prev_req_current_millis = 0;  
+  static bool first_run_flag = true;
   
   switch (dongle_state)
   {
@@ -190,11 +191,12 @@ void loop()
             if (radio.request_orcon_state())
             {
               led_flash(1);
-              if(fan_speed != radio.orcon_state.fan_speed)
+              if( (fan_speed != radio.orcon_state.fan_speed) || (first_run_flag) )
               {
                 fan_speed = radio.orcon_state.fan_speed;
                 fan_speed_req = fan_speed; // Prevent RF update next cycle
                 sendNewStateToGateway(fan_speed);
+                first_run_flag = false;
               }
             }
           }
