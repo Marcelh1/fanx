@@ -17,7 +17,6 @@ If the wrong target was selected during upload, the dongle will not be recognise
 # General
 
 The repository contains of these folders:
-- Standalone
 - Firmata
 - MySensors
 - Bootloaders
