@@ -18,7 +18,7 @@ If the wrong target was selected during upload, the dongle will not be recognise
 
 The repository contains of these folders:
 - Firmata
-- MySensors (prefered one)
+- MySensors (preferred one)
 - Bootloaders
 
 # Firmata version
