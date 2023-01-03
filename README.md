@@ -59,4 +59,36 @@ The "MySensors" version is able to communicate with home automation systems like
 
 In the Arduino library manager, install the MySensors lib before uploading the Sketch.
 
+To implement a FAN entity in Home Assistant, add this code to the configuration.yaml:
+```
+fan:
+  - platform: template
+    fans:
+      mechanische_ventilatie:
+        friendly_name: "Mechanische Ventilatie"
+        value_template: "{{ states('light.fan_speed') }}"
+        preset_mode_template: >
+          {% set output = ['Laag','Mid','Hoog','Auto'] %}
+          {% set idx = state_attr('light.fan_speed', 'V_PERCENTAGE') | int - 1 %}
+          {{ output[idx] }}
+        turn_on:
+          service: homeassistant.turn_on
+          entity_id: light.fan_speed
+        turn_off:
+          service: homeassistant.turn_off
+          entity_id: light.fan_speed
+        set_preset_mode:
+          service: light.turn_on
+          entity_id: light.fan_speed
+          data:
+            brightness_pct: >
+              {% set mapper = {'Laag': 1, 'Mid': 2, 'Hoog': 3, 'Auto': 4} %}
+              {{ mapper[preset_mode] }}
+        preset_modes:
+          - Laag
+          - Mid
+          - Hoog
+          - Auto
+```
+
 [Get one FanX RF Dongle here!](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/)
