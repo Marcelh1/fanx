@@ -2,7 +2,7 @@
 
 [Wireless USB Dongle](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/) for home automation systems to improve the indoor air quality.
 
-![usb dongle](https://github.com/Marcelh1/fanx/blob/main/high_q.png)
+![usb dongle](https://github.com/Marcelh1/fanx/blob/main/images/high_q.png)
 
 # HW versions (important!)
 There are two versions of the dongle, V1.0 and V2.0. They use different bootloaders, same application software (Firmata or Standalone) can be used. It's however very important to select the right board in the Arduino IDE:
