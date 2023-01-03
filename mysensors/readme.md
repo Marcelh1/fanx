@@ -9,6 +9,9 @@ In the library manager, install MySensors lib if you want to change or upload th
 
 # Home Assistant
 The Dongle will create 4 entities in Home Assistant:
+
+![entities](https://github.com/Marcelh1/fanx/blob/main/mysensors/ha_entities.png)
+
 ### 1. Clone Switch (Control)
 Activate this switch to put the Dongle into clone mode, then press a random key on the RF15 remote to clone the addresses. After 5s timeout or succesful clone, the switch will be deactivated autmoatically, if the clone was succesful, the source and target address will be updated as well.
 ### 2. FAN speed (Control)
