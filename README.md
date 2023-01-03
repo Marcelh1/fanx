@@ -22,9 +22,6 @@ The repository contains of these folders:
 - MySensors
 - Bootloaders
 
-# Standalone version
-The "standalone" is the most basic version to communicate with the ventilation unit, after powering the USB dongle, it will stay in "clone mode" for 5sec, when you press a button on the RF15 remote control, the addresses will be cloned. If no button pressed within 5sec, it will use previous stored address in eeprom. The addresses will be stored in eeprom so that it is not forgotten during power off. Open a terminal to see the debug messages, use settings: **9600bps,none,8,1**. If the FAN speed is changed by the stock remote, it will report that FAN speed has been changed. Use the function: **radio.tx_orcon(uint8_t fan_speed)** to transmit a new FAN speed.
-
 # Firmata version
 The "Firmata" version is able to communicate with home automation systems like "Home Assistant". You have to configure it like this:
 ```
