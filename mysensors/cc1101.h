@@ -1,37 +1,6 @@
-/**
- * Copyright (c) 2011 panStamp <contact@panstamp.com>
- * Copyright (c) 2016 Tyler Sommer <contact@tylersommer.pro>
- *
- * This file is part of the CC1101 project.
- *
- * CC1101 is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * any later version.
- *
- * CC1101 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with CC1101; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 
- * USA
- * 
- * Author: Daniel Berenguer
- * Creation date: 03/03/2011
- */
-
-#ifndef _CC1101_H
-#define _CC1101_H
-
 #include <Arduino.h>
 #include <SPI.h>
 
-/**
- * Carrier frequencies
- */
 enum CFREQ
 {
   CFREQ_868 = 0,
@@ -41,9 +10,6 @@ enum CFREQ
   CFREQ_LAST
 };
 
-/**
- * RF STATES
- */
 enum RFSTATE
 {
   RFSTATE_IDLE = 0,
@@ -57,52 +23,30 @@ enum RFSTATE
 #define PAIR_TIME_OUT   5000   // ms
 #define RX_TIME_OUT     300    // ms
 
-/**
- * Working modes
- */
 #define MODE_LOW_SPEED  0x01  // RF speed = 4800 bps (default is 38 Kbps)
-
-/**
- * Frequency channels
- */
 #define NUMBER_OF_FCHANNELS      10
-
-/**
- * Type of transfers
- */
 #define WRITE_BURST              0x40
 #define READ_SINGLE              0x80
 #define READ_BURST               0xC0
-
-/**
- * Type of register
- */
 #define CC1101_CONFIG_REGISTER   READ_SINGLE
 #define CC1101_STATUS_REGISTER   READ_BURST
-
-/**
- * PATABLE & FIFO's
- */
 #define CC1101_PATABLE           0x3E        // PATABLE address
 #define CC1101_TXFIFO            0x3F        // TX FIFO address
 #define CC1101_RXFIFO            0x3F        // RX FIFO address
 #define CC1101_UNKNOWNFIFO       0x7E        // ? FIFO address
 
-/**
- * Command strobes
- */
 #define CC1101_SRES              0x30        // Reset CC1101 chip
 #define CC1101_SFSTXON           0x31        // Enable and calibrate frequency synthesizer (if MCSM0.FS_AUTOCAL=1). If in RX (with CCA):
-                                             // Go to a wait state where only the synthesizer is running (for quick RX / TX turnaround).
+// Go to a wait state where only the synthesizer is running (for quick RX / TX turnaround).
 #define CC1101_SXOFF             0x32        // Turn off crystal oscillator
 #define CC1101_SCAL              0x33        // Calibrate frequency synthesizer and turn it off. SCAL can be strobed from IDLE mode without
-                                             // setting manual calibration mode (MCSM0.FS_AUTOCAL=0)
+// setting manual calibration mode (MCSM0.FS_AUTOCAL=0)
 #define CC1101_SRX               0x34        // Enable RX. Perform calibration first if coming from IDLE and MCSM0.FS_AUTOCAL=1
 #define CC1101_STX               0x35        // In IDLE state: Enable TX. Perform calibration first if MCSM0.FS_AUTOCAL=1.
-                                             // If in RX state and CCA is enabled: Only go to TX if channel is clear
+// If in RX state and CCA is enabled: Only go to TX if channel is clear
 #define CC1101_SIDLE             0x36        // Exit RX / TX, turn off frequency synthesizer and exit Wake-On-Radio mode if applicable
 #define CC1101_SWOR              0x38        // Start automatic RX polling sequence (Wake-on-Radio) as described in Section 19.5 if
-                                             // WORCTRL.RC_PD=0
+// WORCTRL.RC_PD=0
 #define CC1101_SPWD              0x39        // Enter power down mode when CSn goes high
 #define CC1101_SFRX              0x3A        // Flush the RX FIFO buffer. Only issue SFRX in IDLE or RXFIFO_OVERFLOW states
 #define CC1101_SFTX              0x3B        // Flush the TX FIFO buffer. Only issue SFTX in IDLE or TXFIFO_UNDERFLOW states
@@ -110,8 +54,8 @@ enum RFSTATE
 #define CC1101_SNOP              0x3D        // No operation. May be used to get access to the chip status byte
 
 /**
- * CC1101 configuration registers
- */
+   CC1101 configuration registers
+*/
 #define CC1101_IOCFG2            0x00        // GDO2 Output Pin Configuration
 #define CC1101_IOCFG1            0x01        // GDO1 Output Pin Configuration
 #define CC1101_IOCFG0            0x02        // GDO0 Output Pin Configuration
@@ -161,8 +105,8 @@ enum RFSTATE
 #define CC1101_TEST0             0x2E        // Various Test Settings
 
 /**
- * Status registers
- */
+   Status registers
+*/
 #define CC1101_PARTNUM           0x30        // Chip ID
 #define CC1101_VERSION           0x31        // Chip ID
 #define CC1101_FREQEST           0x32        // Frequency Offset Estimate from Demodulator
@@ -245,16 +189,16 @@ enum RFSTATE
 #define CC1101_DEFVAL_TEST0      0x09        // Various Test Settings
 
 /**
- * Alias for some default values
- */
+   Alias for some default values
+*/
 #define CCDEF_CHANNR  CC1101_DEFVAL_CHANNR
 #define CCDEF_SYNC0  CC1101_DEFVAL_SYNC0
 #define CCDEF_SYNC1  CC1101_DEFVAL_SYNC1
 #define CCDEF_ADDR  CC1101_DEFVAL_ADDR
 
 /**
- * Macros
- */
+   Macros
+*/
 // Read CC1101 Config register
 #define readConfigReg(regAddr)    readReg(regAddr, CC1101_CONFIG_REGISTER)
 // Read CC1101 Status register
@@ -282,52 +226,50 @@ enum RFSTATE
 #define PA_LongDistance           0xC0
 
 /**
- * Class: CC1101
- * 
- * Description:
- * CC1101 interface
- */
+   Class: CC1101
+
+   Description:
+   CC1101 interface
+*/
 class CC1101
 {
   private:
     void writeBurstReg(uint8_t regAddr, uint8_t* buffer, uint8_t len);
     void readBurstReg(uint8_t * buffer, uint8_t regAddr, uint8_t len);
     void setRegsFromEeprom(void);
-	uint8_t *manchester_decode(uint8_t rx_buff[], uint8_t len, uint8_t *rx_payload);
-	uint8_t *manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *test_arr);
-	bool transmit_data(uint8_t payload[], uint8_t len);
-	uint8_t calc_crc(uint8_t dataframe[], uint8_t len);
-	
+    uint8_t *manchester_decode(uint8_t rx_buff[], uint8_t len, uint8_t *rx_payload);
+    uint8_t *manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *test_arr);
+    bool transmit_data(uint8_t payload[], uint8_t len);
+    uint8_t calc_crc(uint8_t dataframe[], uint8_t len);
+
   public:
 
-	struct datapoints
-	{
-		uint8_t fan_speed;
-		uint8_t humidity;
-		uint8_t airflow;
-		uint8_t temperature;	
-		uint8_t address[6];
-	};
+    struct datapoints
+    {
+      uint8_t fan_speed;
+      uint8_t humidity;
+      uint8_t airflow;
+      uint8_t temperature;
+      uint8_t address[6];
+    };
 
-	datapoints orcon_state;
-	
+    datapoints orcon_state;
+
     CC1101(void);
     void cmdStrobe(uint8_t cmd);
     void wakeUp(void);
-	bool CC1101::tx_orcon(uint8_t fan_speed);
-	uint8_t CC1101::request_orcon_state(void);
+    bool CC1101::tx_orcon(uint8_t fan_speed);
+    uint8_t CC1101::request_orcon_state(void);
     uint8_t readReg(uint8_t regAddr, uint8_t regType);
     void writeReg(uint8_t regAddr, uint8_t value);
     void config_registers(void);
-    void reset(void);   
+    void reset(void);
     void init(void);
-	void CC1101::set_rx_mode(void);	
-	bool CC1101::clone_mode(void);
+    void CC1101::set_rx_mode(void);
+    bool CC1101::clone_mode(void);
     void setCarrierFreq(uint8_t freq);
     void setPowerDownState();
     void setRxState(void);
     void setTxState(void);
 
 };
-
-#endif
