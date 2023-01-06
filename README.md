@@ -5,13 +5,13 @@
 ![usb dongle](https://github.com/Marcelh1/fanx/blob/main/images/high_q.png)
 
 # HW versions (important!)
-There are two versions of the dongle, V1.0 and V2.0. They use different bootloaders, same application software (Firmata or Standalone) can be used. It's however very important to select the right board in the Arduino IDE:
+There are three versions of the dongle, V1.0 and "V2.0 chip antenna" and "V2.0 sma antenna". They use different bootloaders, same application software (Firmata or MySensors) can be used. It's however very important to select the right board in the Arduino IDE:
 
 V1.0 = Arduino micro
 
 V2.0 = Sparkfun micro pro
 
-If the wrong target was selected during upload, the dongle will not be recognised by Windows anymore, you have to give a short reset pulse by short circuiting the reset pin with ground on the 6p connector just before Arduino is trying to upload the code. This will put the Dongle into bootloader mode for few seconds. Check the assigned com port first after giving the first reset pulse (or double pulse to have some more time). 
+If the wrong target was selected during upload, the dongle will not be recognised by Windows anymore, no worries! You have to give a short reset pulse by short circuiting the reset pin with ground on the 6p connector just before Arduino is trying to upload the code. This will put the Dongle into bootloader mode for few seconds. Check the assigned com port first after giving the first reset pulse (or double pulse to have some more time). 
 
 
 # General
