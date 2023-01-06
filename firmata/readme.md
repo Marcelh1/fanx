@@ -44,7 +44,8 @@ title: Mechanische ventilatie
 
 Then, you should put the files in the “www” folder.
 
-Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source. 
+Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source: 
+
 ![Windows Arduino](https://github.com/Marcelh1/fanx/blob/main/images/help_source.png)
 
 To overwrite the icon shown on the frontpage, you can add the rule shown on the right in configurations.yaml
@@ -53,3 +54,5 @@ customize:
   sensor.fan_speed:
     entity_picture: /local/icons/fan_blue.png
 ```
+
+![Windows Arduino](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
