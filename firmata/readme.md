@@ -42,7 +42,7 @@ entities:
 title: Mechanische ventilatie
 ```
 
-Then, you should put the files in the “www” folder.
+Then, you should put the [files](https://github.com/Marcelh1/fanx/tree/main/data/www) in the “www” folder.
 
 Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source: 
 
