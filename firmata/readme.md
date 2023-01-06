@@ -5,6 +5,8 @@ The onboard led will lit during “clone mode” and will turn off after the 5se
 # Testing the Dongle in Windows
 To check whether the Dongle works ok, and if you are able to clone your stock remote, connect the Dongle to the USB port of your computer and open the App: “Windows Remote Arduino Experience”. Click on the “FanX RF Dongle” (USB Connection) and click connect. Now, open the tab “Analog and enable “Pin A0″, change the FAN speed with your stock remote and check if the value changes, it can take a few seconds before it updates the value.”
 
+![Windows Arduino](https://github.com/Marcelh1/fanx/blob/main/images/Windows-Remote-Arduino-Experience.png)
+
 # Setting up Home Assistant
 
 ## Install the custom integration
@@ -41,7 +43,11 @@ title: Mechanische ventilatie
 ```
 
 Then, you should put the files in the “www” folder.
-Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source. To overwrite the icon shown on the frontpage, you can add the rule shown on the right in configurations.yaml
+
+Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source. 
+![Windows Arduino](https://github.com/Marcelh1/fanx/blob/main/images/help_source.png)
+
+To overwrite the icon shown on the frontpage, you can add the rule shown on the right in configurations.yaml
 ```
 customize:
   sensor.fan_speed:
