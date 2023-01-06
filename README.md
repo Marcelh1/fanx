@@ -1,4 +1,4 @@
-# Open source FanX RF Dongle 
+# Open source 868MHz FanX RF Dongle 
 
 [Wireless USB Dongle](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/) for home automation systems to improve the indoor air quality.
 
