@@ -23,4 +23,14 @@ The repository contains of these folders:
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
 
+# Flash new software into the dongle
+
+## Using the Arduino IDE (installed bootloader)
+Plug in the USB dongle, make sure you have the Arduino IDE installed. Select the Arduino Micro target and the right com port. Then open the sketch and click “upload”.
+
+*Please note that by flashing the dongle, the USB name (description) will be set back to the default (Arduino Micro) one. This can be changed by editing this file: “C:\Program Files (x86)\Arduino\hardware\arduino\avr\boards.txt”, then goto “micro.name=Arduino Micro” and change this param: micro.build.usb_product=”FanX RF Dongle”
+
+## Using Microchip Studio
+Via the onboard 6p header, the software can be flashed directly from Microchip studio. You can use the Atmel ICE flasher, or the Atmel ISP MKII flasher. Via Atmel Studio, also the Arduino (micro) bootloader can be flashed. No example projects are available.
+
 [Get one FanX RF Dongle here!](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/)
