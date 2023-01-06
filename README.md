@@ -17,9 +17,9 @@ If the wrong target was selected during upload, the dongle will not be recognise
 # General
 
 The repository contains of these folders:
-- MySensors (preferred one)
-- Firmata
-- Bootloaders
+- [MySensors](https://github.com/Marcelh1/fanx/tree/main/mysensors) (preffered one)
+- [Firmata](https://github.com/Marcelh1/fanx/tree/main/firmata)
+- [Bootloaders](https://github.com/Marcelh1/fanx/tree/main/bootloaders)
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
 
