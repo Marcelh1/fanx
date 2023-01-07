@@ -13,13 +13,13 @@ The Dongle will create 4 entities in Home Assistant:
 ![entities](https://github.com/Marcelh1/fanx/blob/main/images/ha_entities.png)
 
 ### 1. Clone Switch (Control)
-Activate this switch to put the Dongle into clone mode, then press a random key on the RF15 remote to clone the addresses. After 5s timeout or succesful clone, the switch will be de-activated autmoatically, if the clone was succesful, the source and target address will be updated as well.
+Activate this switch to put the Dongle into clone mode, then press a random key on the RF15 remote to clone the addresses. After 5s timeout or succesful clone, the switch will be de-activated automatically, if the clone was succesful, the source and target address will be updated as well.
 ### 2. FAN speed (Control)
 This entity behaves as light control, the state can be read and written. Use the yaml code to convert it to FAN entity.
 ### 3. Source Address (Sensor)
-The address of the RF15 remote control.
+The address of the RF15 remote control. This is a 32-bits integer containing 3 bytes.
 ### 4. Target Address (Sensor)
-The address of the Orcon unit.
+The address of the Orcon unit. This is a 32-bits integer containing 3 bytes.
 
 
 Add this to the configuration.yaml:
