@@ -4,10 +4,6 @@ Use these settings:
 - Serial connection
 - Baudrate: 38400 bps
 
-# MySensors Arduino LIB
-In the library manager, install MySensors lib if you want to change or upload the Arduino Sketch.
-
-# Home Assistant
 The Dongle will create 4 entities in Home Assistant:
 
 ![entities](https://github.com/Marcelh1/fanx/blob/main/images/ha_entities_ramses.png)
@@ -53,3 +49,13 @@ fan:
           - Hoog
           - Auto
 ```
+
+# MySensors Arduino LIB
+In the library manager, install MySensors lib if you want to change or upload the Arduino Sketch.
+
+# Testing the Dongle in Windows with MYSController
+To test the Dongle operation, you can use the application: MYSController. When opening the connection with a Dongle that has cloned a remote before, it will show this:
+
+![MYSController](https://github.com/Marcelh1/fanx/blob/main/images/myscontroller.png)
+
+If you would like to clone a remote, just click on "Clone switch", change "Subtype" to "V_STATUS" and enter "1" in the Payload field and hit the "Send" button.
