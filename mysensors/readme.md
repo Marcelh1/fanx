@@ -17,9 +17,9 @@ Activate this switch to put the Dongle into clone mode, then press a random key 
 ### 2. FAN speed (Control)
 This entity behaves as light control, the state can be read and written. Use the yaml code to convert it to FAN entity.
 ### 3. Source Address (Sensor)
-The address of the RF15 remote control. This is a 32-bits integer containing 3 bytes.
+The address of the RF15 remote control. According [Ramses II format](https://github.com/zxdavb/ramses_protocol/wiki/Decoding-Data-Fields#device-ids).
 ### 4. Target Address (Sensor)
-The address of the Orcon unit. This is a 32-bits integer containing 3 bytes.
+The address of the Orcon unit. According [Ramses II format](https://github.com/zxdavb/ramses_protocol/wiki/Decoding-Data-Fields#device-ids).
 
 
 Add this to the configuration.yaml:
