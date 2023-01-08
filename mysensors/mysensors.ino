@@ -273,14 +273,24 @@ void receive(const MyMessage &message)
 //******************************************************************************************//
 void sendNewSourceAddressToGateway()
 {
-  uint32_t source_address = ((uint32_t)radio.orcon_state.address[2]<<16) | ((uint32_t)radio.orcon_state.address[1]<<8) | ((uint32_t)radio.orcon_state.address[0]<<0);
-  send(msgSourceAddress.set(source_address));
+  // Ramses II format
+  uint32_t source_address = ((uint32_t)radio.orcon_state.address[3]<<16) | ((uint32_t)radio.orcon_state.address[4]<<8) | ((uint32_t)radio.orcon_state.address[5]<<0);
+  uint8_t device_id = ((source_address & 0xFC0000)>>18);
+  uint32_t address_id = source_address & 0x03FFFF;  
+  String result_string = String(device_id) + ":" + String(address_id);
+  
+  send(msgSourceAddress.set(result_string.c_str()));
 }
 
 void sendNewTargetAddressToGateway()
 {
-  uint32_t target_address = ((uint32_t)radio.orcon_state.address[5]<<16) | ((uint32_t)radio.orcon_state.address[4]<<8) | ((uint32_t)radio.orcon_state.address[3]<<0);
-  send(msgTargetAddress.set(target_address));
+  // Ramses II format
+  uint32_t target_address = ((uint32_t)radio.orcon_state.address[0]<<16) | ((uint32_t)radio.orcon_state.address[1]<<8) | ((uint32_t)radio.orcon_state.address[2]<<0);
+  uint8_t device_id = ((target_address & 0xFC0000)>>18);
+  uint32_t address_id = target_address & 0x03FFFF; 
+  String result_string = String(device_id) + ":" + String(address_id);
+    
+  send(msgTargetAddress.set(result_string.c_str()));
 }
 
 void sendNewStateToGateway(int speed_level)
