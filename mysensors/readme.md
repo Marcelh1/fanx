@@ -58,4 +58,6 @@ To test the Dongle operation, you can use the application: MYSController. When o
 
 ![MYSController](https://github.com/Marcelh1/fanx/blob/main/images/myscontroller.png)
 
-If you would like to clone a remote, just click on "Clone switch", change "Subtype" to "V_STATUS" and enter "1" in the Payload field and hit the "Send" button.
+If you would like to clone a remote, just click on "Clone switch", change "Subtype" to "V_STATUS" and enter "1" in the Payload field and hit the "Send" button:
+
+![Clone settings](https://github.com/Marcelh1/fanx/blob/main/images/clone_settings.png)
