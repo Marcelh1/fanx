@@ -55,4 +55,4 @@ customize:
     entity_picture: /local/icons/fan_blue.png
 ```
 
-![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
+![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
