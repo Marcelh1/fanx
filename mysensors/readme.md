@@ -51,6 +51,9 @@ fan:
 ```
 
 ### Implement the Frontface
+
+![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
+
 To implement a button control on your frontface, add the entity card:
 ```
 type: entities
@@ -75,10 +78,6 @@ customize:
   fan.mechanische_ventilatie:
     entity_picture: /local/icons/fan_blue.png
 ```
-
-![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
-
-Add the javascript file to the www folder.
 
 # MySensors Arduino LIB
 In the library manager, install MySensors lib if you want to change or upload the Arduino Sketch.
