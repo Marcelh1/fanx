@@ -50,7 +50,7 @@ fan:
           - Auto
 ```
 
-### Implement the Frontface
+### Implement the Frontface card
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
 
@@ -66,7 +66,7 @@ entities:
 title: Mechanische ventilatie
 ```
 
-Then, you should put the FILES in the “www” folder.
+Then, you should put these [files](https://github.com/Marcelh1/fanx/tree/main/data/mysensors%20www%20folder) in the “www” folder.
 
 Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source: 
 
