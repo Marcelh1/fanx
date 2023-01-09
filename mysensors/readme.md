@@ -51,6 +51,7 @@ fan:
 ```
 
 Then, to create a button control like this:
+
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
 
 Add the javascript file to the www folder.
