@@ -50,7 +50,7 @@ fan:
           - Auto
 ```
 
-### Implement the Frontface card
+## Implement the Frontface card
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
 
