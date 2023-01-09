@@ -21,7 +21,7 @@ The repository contains of these folders:
 - [Firmata](https://github.com/Marcelh1/fanx/tree/main/firmata)
 - [Bootloaders](https://github.com/Marcelh1/fanx/tree/main/bootloaders)
 
-![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
+![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
 
 # Flash new software into the dongle
 
