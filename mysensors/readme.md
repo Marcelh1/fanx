@@ -50,6 +50,11 @@ fan:
           - Auto
 ```
 
+Then, to create a button control like this:
+![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
+
+Add the javascript file to the www folder.
+
 # MySensors Arduino LIB
 In the library manager, install MySensors lib if you want to change or upload the Arduino Sketch.
 
