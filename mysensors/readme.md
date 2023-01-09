@@ -52,7 +52,7 @@ fan:
 
 ### Implement the Frontface card
 
-![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
+![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
 
 To implement a button control on your frontface, add the entity card:
 ```
