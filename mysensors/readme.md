@@ -50,7 +50,31 @@ fan:
           - Auto
 ```
 
-Then, to create a button control like this:
+### Implement the Frontface
+To implement a button control on your frontface, add the entity card:
+```
+type: entities
+entities:
+  - entity: fan.mechanische_ventilatie
+    name: FAN
+    type: custom:custom-fan-card
+    tap_action:
+      action: none
+title: Mechanische ventilatie
+```
+
+Then, you should put the FILES in the “www” folder.
+
+Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source: 
+
+![Source](https://github.com/Marcelh1/fanx/blob/main/images/help_source.png)
+
+To overwrite the [icon](https://github.com/Marcelh1/fanx/blob/main/images/fan_blue.png) shown on the frontpage, you can add the rule shown on the right in configurations.yaml
+```
+customize:
+  fan.mechanische_ventilatie:
+    entity_picture: /local/icons/fan_blue.png
+```
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Preview.png)
 
