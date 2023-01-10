@@ -79,9 +79,6 @@ customize:
     entity_picture: /local/icons/fan_blue.png
 ```
 
-# MySensors Arduino LIB
-In the library manager, install MySensors lib if you want to change or upload the Arduino Sketch.
-
 # Testing the Dongle in Windows with MYSController
 To test the Dongle operation, you can use the application: MYSController. When opening the connection with a Dongle that has cloned a remote before, it will show this:
 
