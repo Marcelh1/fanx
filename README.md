@@ -27,7 +27,7 @@ The repository contains of these folders:
 # Flash new software into the dongle
 
 ## Using the Arduino IDE (installed bootloader)
-Plug in the USB dongle, make sure you have the Arduino IDE installed. Select the "Arduino Micro" OR "Sparkfun Pro Micro" (check HW Versions above!) target and the right com port. Then open the sketch and click “upload”.
+Plug in the USB dongle, make sure you have the Arduino IDE installed. Select the "Arduino Micro" OR "Sparkfun Pro Micro" (check HW Versions above!) target and the right com port. For MySensors, in the library manager, install the MySensors library, for Firmata, install the Firmata library. Then open the sketch and click “upload”.
 
 *Please note that by flashing the dongle, the USB name (description) will be set back to the default (Arduino Micro) one. This can be changed by editing this file: “C:\Program Files (x86)\Arduino\hardware\arduino\avr\boards.txt”, then goto “micro.name=Arduino Micro” and change this param: micro.build.usb_product=”FanX RF Dongle”
 
