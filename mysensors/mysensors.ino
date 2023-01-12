@@ -2,7 +2,6 @@
 #include <avr/wdt.h>
 #include "cc1101.h"
 #define ONBOARD_LED                 7
-#define LED_FLASH_TIME              50  // ms
 #define ORCON_INTERVAL              5000  // RF link interval
 #define LED_FLASH_TIME              25  // ms
 #define TX_RETRY_CNT                5  // x
