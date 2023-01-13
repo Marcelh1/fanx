@@ -272,7 +272,6 @@ uint8_t *CC1101::manchester_decode(uint8_t rx_buff[], uint8_t len, uint8_t *rx_p
 uint8_t *CC1101::manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *payload_encoded)
 {
   const uint8_t mch_lookup[16] = {0xAA, 0xA9, 0xA6, 0xA5, 0x9A, 0x99, 0x96, 0x95, 0x6A, 0x69, 0x66, 0x65, 0x5A, 0x59, 0x56, 0x55};
-  uint8_t encode_frame_size = (len * 2) + 15;	// Example 14 * 2 + 15 = 43, array from 0 - 42
 
   // Manchester encode
   uint8_t tx_cntr = 0;
@@ -470,7 +469,7 @@ bool CC1101::tx_orcon(uint8_t fan_speed)
   uint8_t payload[14];
   uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
 
-  // header[RQ, W, I, RP]
+  // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
   payload[0] = 0x1C;
 
   // Get souce and target address
@@ -502,7 +501,7 @@ uint8_t CC1101::request_orcon_state(void)
   uint8_t payload[19];
   uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
 
-  // header[RQ, W, I, RP]
+  // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
   payload[0] = 0x1C;
 
   // Get souce and target address

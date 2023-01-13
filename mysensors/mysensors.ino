@@ -11,7 +11,6 @@ enum module_states
   JUST_BOOTED,
   RF15_PAIRINGSMODE,
   PAIRING_FAIL,
-  FIRMATA_INIT,
   NORMAL_MODE
 };
 
