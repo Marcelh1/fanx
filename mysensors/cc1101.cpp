@@ -199,7 +199,6 @@ bool CC1101::clone_mode(void)
             // check if frame_decoded_lenght is even number
             if ((((buff_lenght - bof_frame) - 1) % 2) != 0)
             {
-              //Serial.println("error: odd number of manchester encoded bytes");
               rx_abort_flag = true;
               break;
             }
@@ -225,7 +224,6 @@ bool CC1101::clone_mode(void)
             }
             else
             {
-              //Serial.println("> CRC Error!");
               rx_abort_flag = true;
               break;
             }
@@ -368,19 +366,10 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
             uint8_t bof_frame = buff_lenght - rx_frame_lenght - 2;	// 100 - 27 - 2 => 71
             uint8_t dataframe_encoded[buff_lenght - 1 - bof_frame];	// 100 - 71 => 28
             uint8_t frame_decoded_lenght = ((buff_lenght - bof_frame) - 1) / 2;	// (100 - 71 - 1) / 2 => 14
-            /*
-                        Serial.print("Data: ");
-                        for(int i = bof_frame; i < buff_lenght; i++)
-                        {
-                          Serial.print(rx_buffer[i], HEX);
-                          Serial.print(" ");
-                        }
-                        Serial.println("");
-            */
+
             // check if encoded number of bytes is even number
             if ((((buff_lenght - bof_frame) - 1) % 2) != 0)
             {
-              //Serial.println("> error: odd number of manchester encoded bytes");
               rx_abort_flag = true;
               break;
             }
@@ -395,16 +384,6 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
             uint8_t dataframe_decoded[frame_decoded_lenght];
             manchester_decode(dataframe_encoded, rx_frame_lenght, dataframe_decoded);
 
-            // DEBUG INFO!
-            /*
-            Serial.print("> Debug info: ");
-            Serial.print(bof_frame);
-            Serial.print(" | ");
-            Serial.print(rx_frame_lenght);
-            Serial.print(" | ");
-            Serial.print(frame_decoded_lenght);
-            Serial.print(" | ");
-            */
             // CRC check
             if (calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght - 1])
             {
@@ -425,18 +404,15 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
                   if ( (dataframe_decoded[i] == 0x31) && (dataframe_decoded[i + 1] == 0xD9) ) // Position found!
                     orcon_state.fan_speed = dataframe_decoded[i + 5];
                 }
-                //Serial.println("data ok");
               }
               else
               {
-                //Serial.println("eeprom address mismatch!");
                 rx_abort_flag = true;
                 break;
               }
             }
             else
             {
-              //Serial.println("CRC Error!");
               rx_abort_flag = true;
               break;
             }
@@ -452,10 +428,6 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
     }
   }
 
-  /*
-  if (rx_abort_flag)
-    Serial.println("> Timeout or error");
-  */
   // Back to idle/power down
   cmdStrobe(CC1101_SIDLE);
   writeReg(CC1101_IOCFG0, CC1101_DEFVAL_IOCFG0);

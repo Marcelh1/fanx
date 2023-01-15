@@ -28,16 +28,19 @@ CC1101 radio;
 #define CHILD_ID_SOURCE_ADDRESS     4
 
 #define SN                          "FanX"
-#define SV                          "1.0"
+#define SV                          "1.1"
 
 MyMessage msgSourceAddress(CHILD_ID_TARGET_ADDRESS, V_VAR1);
 MyMessage msgTargetAddress(CHILD_ID_SOURCE_ADDRESS, V_VAR1);
-MyMessage msgBinary(CHILD_ID_CLONE, V_STATUS);
-MyMessage msgState(CHILD_ID_FAN, V_LIGHT);
-MyMessage msgDimmer(CHILD_ID_FAN, V_DIMMER);
+
+MyMessage msgCloneSwitch(CHILD_ID_CLONE, V_STATUS);
+
+MyMessage msgFANspeed(CHILD_ID_FAN, V_PERCENTAGE);
+MyMessage msgFANstate(CHILD_ID_FAN, V_STATUS);
 
 volatile int fan_speed_req = 1;
 volatile int fan_speed = 1;
+volatile int prev_fan_speed = 0;
 
 module_states dongle_state = JUST_BOOTED;
 
@@ -114,25 +117,22 @@ void loop()
       // Inform MySensors once
       send(msgSourceAddress.set(0));
       send(msgTargetAddress.set(0));
-      send(msgBinary.set(0));
-      send(msgState.set(1));
-      send(msgDimmer.set(1));
+      send(msgCloneSwitch.set(0));
+      send(msgFANspeed.set(0));
+      send(msgFANstate.set(0));
 
       // Check communication with Radio chip
       if ((radio.readReg(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & 0x1f) == 1)
       {
         // Read EEPROM address to check if there is an address known
         bool empty_eeprom = true;
-        //Serial.print("Addresses: ");
+
         for (int i = 0; i < 6; i++)
         {
           radio.orcon_state.address[i] = loadState(i);
           if (radio.orcon_state.address[i] != 0xFF) empty_eeprom = false;
-          //Serial.print(radio.orcon_state.address[i], HEX);
-          //Serial.print(" ");
         }
-        //Serial.println();
-        
+                
         if (empty_eeprom)
           dongle_state = PAIRING_FAIL;
         else
@@ -165,7 +165,6 @@ void loop()
 
         prev_req_current_millis = millis(); // prevent burst of transmissions
         dongle_state = NORMAL_MODE;
-
       }
       else
         dongle_state = PAIRING_FAIL;
@@ -206,19 +205,46 @@ void loop()
 
         // Request fan speed on regular interval ORCON_INTERVAL
         req_current_millis = millis();
-        if ( (req_current_millis - prev_req_current_millis) > ORCON_INTERVAL)
+        if((req_current_millis-prev_req_current_millis) > ORCON_INTERVAL)
         {
           prev_req_current_millis += ORCON_INTERVAL;
 
-          if (radio.request_orcon_state())
+          if(radio.request_orcon_state())
           {
             led_flash(1);
-            if ( (fan_speed != radio.orcon_state.fan_speed) || (first_run_flag) )
+
+            if(first_run_flag)                                  // Update once on first boot
             {
               fan_speed = radio.orcon_state.fan_speed;
-              fan_speed_req = fan_speed; // Prevent RF update next cycle
-              sendNewStateToGateway(fan_speed);
-              first_run_flag = false;
+              fan_speed_req = fan_speed;                        // Prevent RF update next cycle
+              
+              if(fan_speed == 0)
+                update_fan_state(0);
+              else
+                update_fan_state(1);
+              
+              update_fan_speed(fan_speed);                
+              
+              first_run_flag = false;              
+            }
+            else if(fan_speed != radio.orcon_state.fan_speed)   // FAN SPEED CHANGED
+            {
+              if(radio.orcon_state.fan_speed == 0)              // DETERMINE TO REPORT FAN STATE CHANGE OF SPEED CHANGE TO CONTROLLER
+              {
+                prev_fan_speed = fan_speed;
+                fan_speed = radio.orcon_state.fan_speed;
+                fan_speed_req = fan_speed;                      // Prevent RF update next cycle              
+                update_fan_state(0);
+              }
+              else
+              {
+                if(fan_speed == 0)                              // Fan is off, new value != 0, therefore: send once V_STATUS = TRUE
+                  update_fan_state(1);                
+  
+                fan_speed = radio.orcon_state.fan_speed;
+                fan_speed_req = fan_speed;                      // Prevent RF update next cycle
+                update_fan_speed(fan_speed);
+              }
             }
           }
         }
@@ -239,28 +265,50 @@ void loop()
 
 void receive(const MyMessage &message)
 {
-  if (message.isAck())
+  if(message.isAck())
   {
     //Serial.println("This is an ack from gateway");
     return;
   }
 
-  if ( (message.getType() == V_STATUS) && (message.getSensor() == 2) )
+  if( (message.getType() == V_STATUS) && (message.getSensor() == CHILD_ID_CLONE) )
   {
-    if (message.getBool())
+    if(message.getBool())
+    {
       dongle_state = RF15_PAIRINGSMODE;
-
-    clone_mode_started();
+      clone_mode_started();
+    }
   }
 
-  if (message.getType() == V_DIMMER)
+  if(message.getSensor() == CHILD_ID_FAN)  // FAN
   {
-    fan_speed_req = constrain( message.getInt(), 0, 100 );
-    fan_speed_req = min(fan_speed_req, 4);      // Limit to 4
-    fan_speed_req = max(fan_speed_req, 0);      // Not negative
+    if(message.getType() == V_STATUS)      // ON, OFF SWITCH
+    {
+      if(!message.getBool())               // FAN OFF
+      {
+        prev_fan_speed = fan_speed;        // STORE FAN SPEED (FOR ONLY RECEIVING "V_STATUS = TRUE" NEXT TIME)
+        fan_speed_req = 0;                 // SEND "0" TO ORCON
+        update_fan_state(0);               // REPORT STATE BACK TO CONTROLLER        
+      }
+      else
+      {
+        fan_speed_req = prev_fan_speed;    // SET BACK FAN SPEED TO ORCON ONLY
+        update_fan_state(1);               // REPORT BACK TO CONTROLLER
+      }   
+      
+    }
 
-    sendNewStateToGateway(fan_speed_req);
+    if (message.getType() == V_PERCENTAGE)
+    {
+      fan_speed_req = constrain( message.getInt(), 0, 100 );
+      fan_speed_req = min(fan_speed_req, 4);      // Limit to 4
+      fan_speed_req = max(fan_speed_req, 0);      // >= 0
+      
+      update_fan_speed(fan_speed_req);
+    }
+
   }
+  
 
 }
 
@@ -291,17 +339,22 @@ void sendNewTargetAddressToGateway()
   send(msgTargetAddress.set(result_string.c_str()));
 }
 
-void sendNewStateToGateway(int speed_level)
+void update_fan_speed(int16_t speed_level)
 {
-  send(msgDimmer.set(speed_level));
+  send(msgFANspeed.set(speed_level));
+}
+
+void update_fan_state(int16_t fan_state)
+{
+  send(msgFANstate.set(fan_state));
 }
 
 void clone_mode_ended(void)
 {
-  send(msgBinary.set(false));
+  send(msgCloneSwitch.set(0));
 }
 
 void clone_mode_started(void)
 {
-  send(msgBinary.set(true));
+  send(msgCloneSwitch.set(1));
 }
