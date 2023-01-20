@@ -1,6 +1,6 @@
 # Open source 868MHz FanX RF Dongle 
 
-[Wireless USB Dongle](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/) for home automation systems to improve the indoor air quality.
+[Wireless USB Dongle](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle-v2-0-sma-antenna/) for home automation systems to improve the indoor air quality.
 
 ![usb dongle](https://github.com/Marcelh1/fanx/blob/main/images/high_q.png)
 
@@ -34,4 +34,4 @@ Plug in the USB dongle, make sure you have the Arduino IDE installed. Select the
 ## Using Microchip Studio
 Via the onboard 6p header, the software can be flashed directly from Microchip studio. You can use the Atmel ICE flasher, or the Atmel ISP MKII flasher. Via Atmel Studio, also the Arduino (micro) bootloader can be flashed. No example projects are available.
 
-[Get one FanX RF Dongle here!](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle/)
+[Get one FanX RF Dongle here!](https://fan-x.eu/product/fan%cb%a3-rf-usb-dongle-v2-0-sma-antenna/)
