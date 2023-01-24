@@ -488,11 +488,11 @@ bool CC1101::tx_orcon(uint8_t fan_speed)
 uint8_t CC1101::request_orcon_state(void)
 {
 
-  uint8_t payload[12];
+  uint8_t payload[19];
   uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
 
   // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
-  payload[0] = 0x0C;
+  payload[0] = 0x1C;
 
   // Get souce and target address
   for (uint8_t i = 1; i < 7; i++)
@@ -500,13 +500,20 @@ uint8_t CC1101::request_orcon_state(void)
 
   // Opcode[FAN speed status]
   payload[7] = 0x31;
-  payload[8] = 0xDA;
+  payload[8] = 0xE0;
 
   // Command lenght
-  payload[9] = 0x01;
+  payload[9] = 0x08;
 
   // Payload
   payload[10] = 0x00;
+  payload[11] = 0x00;
+  payload[12] = 0x00;
+  payload[13] = 0x00;
+  payload[14] = 0x01;
+  payload[15] = 0x00;
+  payload[16] = 0x64;
+  payload[17] = 0x00;
 
   payload[ARR_SIZE - 1] = calc_crc(payload, ARR_SIZE);
 
