@@ -1,10 +1,14 @@
 # MySensors configuration in Home Assistant
-Use these settings:
+
+First, plug in the Dongle.
+
+Install MySensors and use these settings:
+- Check in HA hardware settings which comport was assigned to the dongle
 - MySensors version: 2.3.2
 - Serial connection
 - Baudrate: 38400 bps
 
-The Dongle will create 4 entities in Home Assistant:
+The Dongle will create 4 entities in Home Assistant, (if not, just plug out/in the dongle once):
 
 ![entities](https://github.com/Marcelh1/fanx/blob/main/images/ha_entities_ramses.png)
 
@@ -54,7 +58,13 @@ fan:
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
 
-To implement a button control on your frontface, add the entity card:
+To implement a button control on your frontface, you should put these [files](https://github.com/Marcelh1/fanx/tree/main/data/mysensors%20www%20folder) in the “www” folder.
+
+Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source: 
+
+![Source](https://github.com/Marcelh1/fanx/blob/main/images/help_source.png)
+
+Now it's a good time to restart HA, then add the entity card:
 ```
 type: entities
 entities:
@@ -66,13 +76,7 @@ entities:
 title: Mechanische ventilatie
 ```
 
-Then, you should put these [files](https://github.com/Marcelh1/fanx/tree/main/data/mysensors%20www%20folder) in the “www” folder.
-
-Next, you have to register the JavaScript at: “Settings”, “Dashboards”, then click on the “right top three dots”, hit: “Sources”. You should add a source: 
-
-![Source](https://github.com/Marcelh1/fanx/blob/main/images/help_source.png)
-
-To overwrite the [icon](https://github.com/Marcelh1/fanx/blob/main/images/fan_blue.png) shown on the frontpage, you can add the rule shown on the right in configurations.yaml
+Optionally, to overwrite the [icon](https://github.com/Marcelh1/fanx/blob/main/images/fan_blue.png) shown on the frontpage, you can add the rule shown on the right in configurations.yaml
 ```
 customize:
   fan.mechanische_ventilatie:
