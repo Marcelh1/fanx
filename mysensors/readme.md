@@ -54,6 +54,8 @@ fan:
           - Auto
 ```
 
+Perform a HA restart, check if the entity becomes visible and operates.
+
 ## Implement the Frontface card
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
