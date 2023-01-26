@@ -22,6 +22,7 @@ The address of the RF15 remote control. According [Ramses II format](https://git
 The address of the Orcon unit. According [Ramses II format](https://github.com/zxdavb/ramses_protocol/wiki/Decoding-Data-Fields#device-ids).
 
 
+## Configuration.yaml
 Add this to the configuration.yaml:
 ```
 fan:
