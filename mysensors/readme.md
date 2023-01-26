@@ -3,7 +3,7 @@
 First, plug in the Dongle.
 
 Install MySensors and use these settings:
-- Check in HA hardware settings which comport was assigned to the dongle
+- Check in HA (settings, system, hardware, all hardware) which comport was assigned to the dongle
 - MySensors version: 2.3.2
 - Serial connection
 - Baudrate: 38400 bps
