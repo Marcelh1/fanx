@@ -291,11 +291,11 @@ uint8_t *CC1101::manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *payl
 bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 {
   bool orcon_frame_valid = false;
-  const uint8_t buff_lenght = 100;
+  const uint8_t buff_lenght = 200;
   uint8_t rx_buffer[buff_lenght];
-  uint8_t tx_buffer[buff_lenght];
   bool header_detected_flag = false;
   uint8_t tx_frame_lenght = (len * 2) + 15;	// 15 bytes overhead, len*2 data
+  uint8_t tx_buffer[tx_frame_lenght];
   uint8_t rx_frame_lenght = 0;
   uint8_t tx_payload_encoded[len * 2];
 
@@ -323,6 +323,15 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   // EOF
   tx_buffer[tx_frame_lenght - 1] = 0x35;
 
+  Serial.print("> TX DATA: ");
+  for(int i = 0; i < tx_frame_lenght; i++)
+  {
+    Serial.print(tx_buffer[i], HEX);
+    Serial.print(" ");    
+  }
+  Serial.println("");
+
+
   config_registers();	// Reconfigure CC1101
   setTxState();
 
@@ -336,27 +345,31 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   // Read serial data, variable frame lenght
   previousMillis = millis();
 
-  while (!orcon_frame_valid && !rx_abort_flag)	// wait till both frames received, or timeout
+  while (!rx_abort_flag)	// wait till both frames received, or timeout
   {
-    // Handle timeout
-    currentMillis = millis();
-    if (currentMillis - previousMillis > RX_TIME_OUT)
-      rx_abort_flag = true;
-    else
-    {
-      while ((Serial1.available() > 0) && (!orcon_frame_valid)) // Exit loop when frame recognised
+      while ((Serial1.available() > 0) && !rx_abort_flag) // Exit loop when frame recognised
       {
+		// Time-out check
+		currentMillis = millis();
+		if (currentMillis - previousMillis > RX_TIME_OUT)
+		{
+		  Serial.println("> Timeout!");
+		  rx_abort_flag = true;
+		  break;
+		}
+
         // Fifo buffer
         for (uint8_t i = 0; i < buff_lenght - 1; i++)
           rx_buffer[i] = rx_buffer[i + 1];
         rx_buffer[buff_lenght - 1] = Serial1.read();
-
+	
         if (header_detected_flag)
         {
           if (rx_frame_lenght < buff_lenght - 2)
             rx_frame_lenght++;
           else
           {
+		    Serial.println("> No 0x35 detected!");
             rx_abort_flag = true;
             break;
           }
@@ -378,9 +391,10 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
             // check if encoded number of bytes is even number
             if ((((buff_lenght - bof_frame) - 1) % 2) != 0)
             {
+			  Serial.println("> Not even number of frames for decoding!");
               rx_abort_flag = true;
               break;
-            }
+            }				
 
             uint8_t x = 0;
             for (uint8_t i = bof_frame; i < buff_lenght - 1; i++)
@@ -401,7 +415,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
             Serial.println(""); 
 
             // CRC check
-            if (calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght - 1])
+            if(calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght - 1])
             {
               // Check address!
               orcon_frame_valid = true;
@@ -411,7 +425,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
                   orcon_frame_valid = false;
               }
 
-              if (orcon_frame_valid)	// Update states
+              if(orcon_frame_valid)	// Update states
               {
                 // Scan for 31D9 message + 5 positions = fan speed
                 // This enabled support for HRC400 as well
@@ -420,6 +434,8 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
                   if ( (dataframe_decoded[i] == 0x31) && (dataframe_decoded[i + 1] == 0xD9) ) // Position found!
                     orcon_state.fan_speed = dataframe_decoded[i + 5];
                 }
+                rx_abort_flag = true;
+                break;				
               }
               else
               {
@@ -439,12 +455,19 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
         else
         {
           // Accept 0x6A (MVS15) and 0x66 (HRC400)
-          if ( ((rx_buffer[99] == 0x6A) || (rx_buffer[99] == 0x66)) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00))
+          if ( ((rx_buffer[buff_lenght-1] == 0x6A) || (rx_buffer[buff_lenght-1] == 0x66)) && (rx_buffer[buff_lenght-2] == 0xA9) && (rx_buffer[buff_lenght-3] == 0x53) && (rx_buffer[buff_lenght-4] == 0x55) && (rx_buffer[buff_lenght-5] == 0x33) && (rx_buffer[buff_lenght-6] == 0x00))
             header_detected_flag = true;
         }
-      }
     }
   }
+
+	if(orcon_frame_valid)
+		Serial.println("> RX Data ok!");
+	else
+	{
+		if(!header_detected_flag)
+			Serial.println("> No header detected!");		
+	}
 
   // Back to idle/power down
   cmdStrobe(CC1101_SIDLE);
@@ -488,11 +511,11 @@ bool CC1101::tx_orcon(uint8_t fan_speed)
 uint8_t CC1101::request_orcon_state(void)
 {
 
-  uint8_t payload[19];
+  uint8_t payload[12];
   uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
 
   // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
-  payload[0] = 0x1C;
+  payload[0] = 0x0C;
 
   // Get souce and target address
   for (uint8_t i = 1; i < 7; i++)
@@ -500,30 +523,15 @@ uint8_t CC1101::request_orcon_state(void)
 
   // Opcode[FAN speed status]
   payload[7] = 0x31;
-  payload[8] = 0xE0;
+  payload[8] = 0xDA;
 
   // Command lenght
-  payload[9] = 0x08;
+  payload[9] = 0x01;
 
   // Payload
   payload[10] = 0x00;
-  payload[11] = 0x00;
-  payload[12] = 0x00;
-  payload[13] = 0x00;
-  payload[14] = 0x01;
-  payload[15] = 0x00;
-  payload[16] = 0x64;
-  payload[17] = 0x00;
 
   payload[ARR_SIZE - 1] = calc_crc(payload, ARR_SIZE);
-
-  Serial.print("> TX DATA: ");
-  for(int i = 0; i < ARR_SIZE; i++)
-  {
-    Serial.print(payload[i], HEX);
-    Serial.print(" ");    
-  }
-  Serial.println("");
 
   // Returns bool
   return transmit_data(payload, ARR_SIZE);
