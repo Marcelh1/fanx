@@ -21,7 +21,7 @@ enum RFSTATE
 #define chipSelectPin 4
 
 #define PAIR_TIME_OUT   5000   // ms
-#define RX_TIME_OUT     300    // ms
+#define RX_TIME_OUT     500    // ms
 
 #define MODE_LOW_SPEED  0x01  // RF speed = 4800 bps (default is 38 Kbps)
 #define NUMBER_OF_FCHANNELS      10
