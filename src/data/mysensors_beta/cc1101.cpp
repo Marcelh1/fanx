@@ -473,13 +473,13 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 			new_fan_state.exhaust_temperature = (dataframe_decoded[17]*256)+dataframe_decoded[18];			
 			new_fan_state.supply_temperature = (dataframe_decoded[19]*256)+dataframe_decoded[20];
 			
-			new_fan_state.bypass_position = dataframe_decoded[23];				
+			new_fan_state.bypass_position = dataframe_decoded[27];				
 			
-			new_fan_state.exhaust_fanspeed = dataframe_decoded[25];			
-			new_fan_state.supply_fanspeed = dataframe_decoded[26];
+			new_fan_state.exhaust_fanspeed = dataframe_decoded[29];			
+			new_fan_state.supply_fanspeed = dataframe_decoded[30];
 			
-			new_fan_state.supply_flow = (dataframe_decoded[31]*256)+dataframe_decoded[32];
-			new_fan_state.exhaust_flow = (dataframe_decoded[33]*256)+dataframe_decoded[34];
+			new_fan_state.supply_flow = (dataframe_decoded[35]*256)+dataframe_decoded[36];
+			new_fan_state.exhaust_flow = (dataframe_decoded[37]*256)+dataframe_decoded[38];
 			
             msg_id[fan_info].rx_flag = true;
           }
