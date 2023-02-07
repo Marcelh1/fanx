@@ -36,9 +36,11 @@ CC1101 radio;
 #define CHILD_ID_SUPPLY_FANSPEED    11
 #define CHILD_ID_SUPPLY_FLOW        12
 #define CHILD_ID_EXHAUST_FLOW       13
+#define CHILD_ID_INDOOR_TEMP        14
+#define CHILD_ID_OUTDOOR_TEMP       15
 
 #define SN                          "FanX"
-#define SV                          "1.3"
+#define SV                          "1.4"
 
 MyMessage msgSourceAddress(CHILD_ID_TARGET_ADDRESS, V_VAR1);
 MyMessage msgTargetAddress(CHILD_ID_SOURCE_ADDRESS, V_VAR1);
@@ -51,6 +53,9 @@ MyMessage msgOutdoorHUM(CHILD_ID_OUTDOOR_HUM, V_HUM);
 
 MyMessage msgExhaustTEMP(CHILD_ID_EXHAUST_TEMP, V_TEMP);
 MyMessage msgSupplyTEMP(CHILD_ID_SUPPLY_TEMP, V_TEMP);
+
+MyMessage msgIndoorTEMP(CHILD_ID_INDOOR_TEMP, V_TEMP);
+MyMessage msgOutdoorTEMP(CHILD_ID_OUTDOOR_TEMP, V_TEMP);
 
 MyMessage msgBypassPOS(CHILD_ID_BYPASS_POS, V_VAR1);
 
@@ -108,6 +113,9 @@ void presentation()
   
   present(CHILD_ID_SUPPLY_FLOW, S_CUSTOM, "Supply flow (m3/h)");
   present(CHILD_ID_EXHAUST_FLOW, S_CUSTOM, "Exhaust flow (m3/h)");
+
+  present(CHILD_ID_INDOOR_TEMP, S_TEMP, "Indoor temperature (ºC)");
+  present(CHILD_ID_OUTDOOR_TEMP, S_TEMP, "Outdoor temperature (ºC)");  
 }
 
 //******************************************************************************************//
@@ -157,6 +165,18 @@ void update_new_params()
     send(msgSupplyTEMP.set(temperature, 1));
     radio.current_fan_state.supply_temperature != radio.new_fan_state.supply_temperature;
   }
+  if(radio.current_fan_state.indoor_temperature != radio.new_fan_state.indoor_temperature)
+  {
+    temperature = (radio.new_fan_state.indoor_temperature/100.0);
+    send(msgIndoorTEMP.set(temperature, 1));
+    radio.current_fan_state.indoor_temperature != radio.new_fan_state.indoor_temperature;
+  }
+  if(radio.current_fan_state.outdoor_temperature != radio.new_fan_state.outdoor_temperature)
+  {
+    temperature = (radio.new_fan_state.outdoor_temperature/100.0);
+    send(msgOutdoorTEMP.set(temperature, 1));
+    radio.current_fan_state.outdoor_temperature != radio.new_fan_state.outdoor_temperature;
+  }  
   if(radio.current_fan_state.bypass_position != radio.new_fan_state.bypass_position)
   {
     send(msgBypassPOS.set(radio.new_fan_state.bypass_position));
@@ -219,6 +239,8 @@ void loop()
       send(msgOutdoorHUM.set(0));
       send(msgExhaustTEMP.set(0));
       send(msgSupplyTEMP.set(0));
+      send(msgIndoorTEMP.set(0));
+      send(msgOutdoorTEMP.set(0));
       send(msgBypassPOS.set(0));
       send(msgExhaustFAN.set(0));
       send(msgSupplyFAN.set(0));
@@ -293,7 +315,7 @@ void loop()
       {
         if (tx_retry_cntr < TX_RETRY_CNT)
         {
-          if (radio.tx_fan(fan_speed_req))                    // Succes, blink led
+          if (radio.tx_fanspeed(fan_speed_req))                    // Succes, blink led
           {
             led_flash(1);
             radio.current_fan_state.fan_speed = radio.new_fan_state.fan_speed;            // If ok, current fan speed should match requested one
@@ -302,7 +324,7 @@ void loop()
         }
         else
           radio.current_fan_state.fan_speed = fan_speed_req;                            // Forget about this session, maybe more succes next time?
-      }
+      }   
       else
       {
         tx_retry_cntr = 0; // reset cntr
@@ -334,7 +356,7 @@ void loop()
             else 
             {
               update_new_params(); // update changed params to controller
-              
+             
               // FAN SPEED CHANGE
               if(radio.current_fan_state.fan_speed != radio.new_fan_state.fan_speed)   // FAN SPEED CHANGED
               {
@@ -409,10 +431,7 @@ void receive(const MyMessage &message)
 
     if (message.getType() == V_PERCENTAGE)
     {
-      fan_speed_req = constrain( message.getInt(), 0, 100 );
-      fan_speed_req = min(fan_speed_req, 4);      // Limit to 4
-      fan_speed_req = max(fan_speed_req, 0);      // >= 0
-      
+      fan_speed_req = constrain(message.getInt(), 0, 4);     
       update_fan_speed(fan_speed_req);
     }
   } 

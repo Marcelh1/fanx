@@ -160,7 +160,7 @@ uint8_t CC1101::calc_crc(uint8_t dataframe[], uint8_t len)
 
 bool CC1101::clone_mode(void)
 {
-  const uint8_t buff_lenght = 150;
+  const uint8_t buff_lenght = 75;
   uint8_t rx_buffer[buff_lenght];
   uint8_t rbuf[buff_lenght];
   int rlen = 0;  
@@ -216,13 +216,12 @@ bool CC1101::clone_mode(void)
   // Process data
   if ( (rlen == 0) || (rlen == 100)) // No valid data
   {
-	if(DEBUG_MODE)
-	{
+	#ifdef DEBUG_MODE
 		if (!header_detected_flag)
 		  Serial.println("> Error: no header detected!");
 		else
 		  Serial.println("> header detected, but no valid data!");
-	}
+	#endif
 
   }
   else
@@ -230,15 +229,16 @@ bool CC1101::clone_mode(void)
 	  // check if encoded number of bytes is even number
     if ((rlen % 2) != 0)
 	{
-      if(DEBUG_MODE) Serial.println("> Error: not even number, problaby corrupted msg, problematic for decoding");
+	  #ifdef DEBUG_MODE
+        Serial.println("> Error: not even number, problaby corrupted msg, problematic for decoding");
+	  #endif
     }
 	else
     {
       uint8_t dataframe_decoded[rlen / 2];
       manchester_decode(rbuf, rlen, dataframe_decoded);
 
-      if(DEBUG_MODE) 
-	  {
+      #ifdef DEBUG_MODE
 		  Serial.print("> RX decoded data used for cloning: ");
 		  for (int i = 0; i < rlen / 2; i++)
 		  {
@@ -246,7 +246,7 @@ bool CC1101::clone_mode(void)
 			Serial.print(" ");
 		  }
 		  Serial.print(" | ");
-	  }
+	  #endif
 	  
       // CRC check
       if (calc_crc(dataframe_decoded, rlen / 2) == dataframe_decoded[(rlen / 2) - 1])
@@ -312,7 +312,7 @@ uint8_t *CC1101::manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *payl
 bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 {
   bool fan_frame_valid = false;
-  const uint8_t buff_lenght = 150;
+  const uint8_t buff_lenght = 100;
   uint8_t rx_buffer[6];
   uint8_t rbuf[buff_lenght];
   int rlen = 0;
@@ -402,37 +402,36 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   // Process data
   if ( (rlen == 0) || (rlen == 100)) // No valid data
   {
-	if(DEBUG_MODE)
-	{
-		if (!header_detected_flag)
-		  Serial.println("> Error: no header detected!");
-		else
-		  Serial.println("> header detected, but no valid data!");
-	}
-
+	#ifdef DEBUG_MODE
+	if (!header_detected_flag)
+	  Serial.println("> Error: no header detected!");
+	else
+	  Serial.println("> header detected, but no valid data!");
+	#endif
   }
   else
   {
     // check if encoded number of bytes is even number
     if ((rlen % 2) != 0)
 	{
-      if(DEBUG_MODE) Serial.println("> Error: not even number, problaby corrupted msg, problematic for decoding");
+      #ifdef DEBUG_MODE
+	  Serial.println("> Error: not even number, problaby corrupted msg, problematic for decoding");
+	  #endif
     }
 	else
     {
       uint8_t dataframe_decoded[rlen / 2];
       manchester_decode(rbuf, rlen, dataframe_decoded);
 
-      if(DEBUG_MODE) 
+      #ifdef DEBUG_MODE
+	  Serial.print("> RX decoded data: ");
+	  for (int i = 0; i < rlen / 2; i++)
 	  {
-		  Serial.print("> RX decoded data: ");
-		  for (int i = 0; i < rlen / 2; i++)
-		  {
-			Serial.print(dataframe_decoded[i], HEX);
-			Serial.print(" ");
-		  }
-		  Serial.print(" | ");
+		Serial.print(dataframe_decoded[i], HEX);
+		Serial.print(" ");
 	  }
+	  Serial.print(" | ");
+	  #endif
 	  
       // CRC check
       if (calc_crc(dataframe_decoded, rlen / 2) == dataframe_decoded[(rlen / 2) - 1])
@@ -455,6 +454,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
             new_fan_state.fan_speed = dataframe_decoded[11];
             msg_id[fan_speed].rx_flag = true;
           }
+
           if (param_type == 0x31D9)	// FAN SPEED, don't check for lenght, might differ from MVS and HRC
           {
             new_fan_state.fan_speed = dataframe_decoded[12];
@@ -468,32 +468,37 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 		  if ( (param_type == 0x31DA) && (param_lenght == 0x1E) )	// EXTENDED 31DA INFO
           {
             new_fan_state.indoor_humidity = dataframe_decoded[15];
-			new_fan_state.outdoor_humidity = dataframe_decoded[16];
-			
+			new_fan_state.outdoor_humidity = dataframe_decoded[16];			
 			new_fan_state.exhaust_temperature = (dataframe_decoded[17]*256)+dataframe_decoded[18];			
 			new_fan_state.supply_temperature = (dataframe_decoded[19]*256)+dataframe_decoded[20];
-			
-			new_fan_state.bypass_position = dataframe_decoded[27];				
-			
+			new_fan_state.indoor_temperature = (dataframe_decoded[21]*256)+dataframe_decoded[22];			
+			new_fan_state.outdoor_temperature = (dataframe_decoded[23]*256)+dataframe_decoded[24];			
+			new_fan_state.bypass_position = dataframe_decoded[27];			
 			new_fan_state.exhaust_fanspeed = dataframe_decoded[29];			
-			new_fan_state.supply_fanspeed = dataframe_decoded[30];
-			
+			new_fan_state.supply_fanspeed = dataframe_decoded[30];			
 			new_fan_state.supply_flow = (dataframe_decoded[35]*256)+dataframe_decoded[36];
 			new_fan_state.exhaust_flow = (dataframe_decoded[37]*256)+dataframe_decoded[38];
 			
             msg_id[fan_info].rx_flag = true;
           }
 
-          if(DEBUG_MODE) Serial.println("Data ok!");
+          #ifdef DEBUG_MODE
+			Serial.println("Data ok!");
+		  #endif
         }
         else
 		{
-          if(DEBUG_MODE) Serial.println("Valid message, wrong address!");
+          #ifdef DEBUG_MODE
+   		    Serial.println("Valid message, wrong address!");
+		  #endif
+			
 		}
       }
       else
 	  {
-        if(DEBUG_MODE) Serial.println("CRC ERROR!");
+	    #ifdef DEBUG_MODE
+          Serial.println("CRC ERROR!");
+		#endif
 	  }
     }
   }
@@ -506,7 +511,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   return fan_frame_valid;
 }
 
-bool CC1101::tx_fan(uint8_t fan_speed)
+bool CC1101::tx_fanspeed(uint8_t fan_speed)
 {
   uint8_t payload[14];
   uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
@@ -536,6 +541,38 @@ bool CC1101::tx_fan(uint8_t fan_speed)
   return transmit_data(payload, ARR_SIZE);
 
 }
+/*
+bool CC1101::tx_fan_bypass(uint8_t fan_bypass)
+{
+  uint8_t payload[14];
+  uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
+
+  // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
+  payload[0] = 0x1C;
+
+  // Get souce and target address
+  for (uint8_t i = 1; i < 7; i++)
+    payload[i] = new_fan_state.address[i - 1];
+
+  // Opcode[FAN speed status]
+  payload[7] = 0x22;
+  payload[8] = 0xF7;
+
+  // Command lenght
+  payload[9] = 0x03;
+
+  // Payload
+  payload[10] = 0x00;
+  payload[11] = fan_bypass;
+  payload[12] = 0xEF;
+
+  payload[ARR_SIZE - 1] = calc_crc(payload, ARR_SIZE);
+
+  // Returns bool
+  return transmit_data(payload, ARR_SIZE);
+
+}
+*/
 
 uint8_t CC1101::request_fan_state(void)
 {
