@@ -39,8 +39,10 @@ CC1101 radio;
 #define CHILD_ID_INDOOR_TEMP        14
 #define CHILD_ID_OUTDOOR_TEMP       15
 
+#define CHILD_ID_BYPASS_MODE        16
+
 #define SN                          "FanX"
-#define SV                          "1.4"
+#define SV                          "1.5"
 
 MyMessage msgSourceAddress(CHILD_ID_TARGET_ADDRESS, V_VAR1);
 MyMessage msgTargetAddress(CHILD_ID_SOURCE_ADDRESS, V_VAR1);
@@ -64,6 +66,10 @@ MyMessage msgSupplyFAN(CHILD_ID_SUPPLY_FANSPEED, V_VAR1);
 
 MyMessage msgSupplyFLOW(CHILD_ID_SUPPLY_FLOW, V_VAR1);
 MyMessage msgExhaustFLOW(CHILD_ID_EXHAUST_FLOW, V_VAR1);
+
+MyMessage msgBypassMODE(CHILD_ID_BYPASS_MODE, V_VAR1);
+
+volatile uint8_t fan_bypass_mode_req = 0;
 
 volatile int fan_speed_req = 1;
 volatile int prev_fan_speed = 0;
@@ -116,6 +122,8 @@ void presentation()
 
   present(CHILD_ID_INDOOR_TEMP, S_TEMP, "Indoor temperature (ºC)");
   present(CHILD_ID_OUTDOOR_TEMP, S_TEMP, "Outdoor temperature (ºC)");  
+
+  present(CHILD_ID_BYPASS_MODE, S_CUSTOM, "Bypass mode (0, 1, 2)");
 }
 
 //******************************************************************************************//
@@ -195,14 +203,14 @@ void update_new_params()
 
   if(radio.current_fan_state.supply_flow != radio.new_fan_state.supply_flow)
   {
-    flow = (radio.new_fan_state.supply_flow/100.0);
+    flow = ((radio.new_fan_state.supply_flow/100.0)*3.6); // l/s => m3/h
     send(msgSupplyFLOW.set(flow, 1));
     radio.current_fan_state.supply_flow != radio.new_fan_state.supply_flow;
   } 
 
   if(radio.current_fan_state.exhaust_flow != radio.new_fan_state.exhaust_flow)
   {
-    flow = (radio.new_fan_state.exhaust_flow/100.0);
+    flow = ((radio.new_fan_state.exhaust_flow/100.0)*3.6); // l/s => m3/h
     send(msgExhaustFLOW.set(flow, 1));
     radio.current_fan_state.exhaust_flow != radio.new_fan_state.exhaust_flow;
   }   
@@ -246,6 +254,7 @@ void loop()
       send(msgSupplyFAN.set(0));
       send(msgSupplyFLOW.set(0));
       send(msgExhaustFLOW.set(0));
+      send(msgBypassMODE.set(0));
 
       // Check communication with Radio chip
       if ((radio.readReg(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & 0x1f) == 1)
@@ -324,7 +333,21 @@ void loop()
         }
         else
           radio.current_fan_state.fan_speed = fan_speed_req;                            // Forget about this session, maybe more succes next time?
-      }   
+      }
+      else if (radio.current_fan_state.bypass_mode != fan_bypass_mode_req)
+      {
+        if (tx_retry_cntr < TX_RETRY_CNT)
+        {
+          if (radio.tx_fan_bypass(fan_bypass_mode_req))                    // Succes, blink led
+          {
+            led_flash(1);
+            radio.current_fan_state.bypass_mode = radio.new_fan_state.bypass_mode;            // If ok, current fan speed should match requested one
+          }
+          tx_retry_cntr++;
+        }
+        else
+          radio.current_fan_state.bypass_mode = fan_bypass_mode_req;            // If ok, current fan speed should match requested one
+      }
       else
       {
         tx_retry_cntr = 0; // reset cntr
@@ -412,6 +435,15 @@ void receive(const MyMessage &message)
     }
   }
 
+  if(message.getSensor() == CHILD_ID_BYPASS_MODE)  // BYPASS MODE
+  {
+    if (message.getType() == V_VAR1)
+    {
+      fan_bypass_mode_req = constrain(message.getInt(), 0, 2);      
+      update_bypass_mode(fan_bypass_mode_req);
+    }
+  }
+
   if(message.getSensor() == CHILD_ID_FAN)  // FAN
   {
     if(message.getType() == V_STATUS)      // ON, OFF SWITCH
@@ -462,6 +494,11 @@ void sendNewTargetAddressToGateway()
   String result_string = String(device_id) + ":" + String(address_id);
     
   send(msgTargetAddress.set(result_string.c_str()));
+}
+
+void update_bypass_mode(int16_t bypass_mode)
+{
+  send(msgBypassMODE.set(bypass_mode));
 }
 
 void update_fan_speed(int16_t speed_level)
