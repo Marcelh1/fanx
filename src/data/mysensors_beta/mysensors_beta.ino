@@ -42,7 +42,7 @@ CC1101 radio;
 #define CHILD_ID_BYPASS_MODE        16
 
 #define SN                          "FanX"
-#define SV                          "1.5"
+#define SV                          "1.6"
 
 MyMessage msgSourceAddress(CHILD_ID_TARGET_ADDRESS, V_VAR1);
 MyMessage msgTargetAddress(CHILD_ID_SOURCE_ADDRESS, V_VAR1);
@@ -67,7 +67,8 @@ MyMessage msgSupplyFAN(CHILD_ID_SUPPLY_FANSPEED, V_VAR1);
 MyMessage msgSupplyFLOW(CHILD_ID_SUPPLY_FLOW, V_VAR1);
 MyMessage msgExhaustFLOW(CHILD_ID_EXHAUST_FLOW, V_VAR1);
 
-MyMessage msgBypassMODE(CHILD_ID_BYPASS_MODE, V_VAR1);
+MyMessage msgBypassMODE_VAL(CHILD_ID_BYPASS_MODE, V_PERCENTAGE);
+MyMessage msgBypassMODE_STATE(CHILD_ID_BYPASS_MODE, V_STATUS);
 
 volatile uint8_t fan_bypass_mode_req = 0;
 
@@ -123,7 +124,7 @@ void presentation()
   present(CHILD_ID_INDOOR_TEMP, S_TEMP, "Indoor temperature (ºC)");
   present(CHILD_ID_OUTDOOR_TEMP, S_TEMP, "Outdoor temperature (ºC)");  
 
-  present(CHILD_ID_BYPASS_MODE, S_CUSTOM, "Bypass mode (0, 1, 2)");
+  present(CHILD_ID_BYPASS_MODE, S_DIMMER, "Bypass mode (1, 2, 3)"); // Auto, open, close
 }
 
 //******************************************************************************************//
@@ -147,9 +148,18 @@ void led_flash(uint8_t flash_cnt)
 //                        Update new params to controller                                   //
 //                                                                                          //
 //******************************************************************************************//
+
+float temp_from_hex(uint16_t hex_value)
+{
+  if(hex_value >= 32768)
+    return (hex_value - 65536)/100.0;
+  else
+    return (hex_value)/100.0;
+}
+
 void update_new_params()
 {
-  float temperature, flow;
+  float flow;
   
   if(radio.current_fan_state.indoor_humidity != radio.new_fan_state.indoor_humidity)
   {
@@ -163,42 +173,38 @@ void update_new_params()
   }
   if(radio.current_fan_state.exhaust_temperature != radio.new_fan_state.exhaust_temperature)
   {
-    temperature = (radio.new_fan_state.exhaust_temperature/100.0);
-    send(msgExhaustTEMP.set(temperature, 1));
-    radio.current_fan_state.exhaust_temperature != radio.new_fan_state.exhaust_temperature;
+    send(msgExhaustTEMP.set(temp_from_hex(radio.new_fan_state.exhaust_temperature), 1));
+    radio.current_fan_state.exhaust_temperature = radio.new_fan_state.exhaust_temperature;
   }
   if(radio.current_fan_state.supply_temperature != radio.new_fan_state.supply_temperature)
   {
-    temperature = (radio.new_fan_state.supply_temperature/100.0);
-    send(msgSupplyTEMP.set(temperature, 1));
-    radio.current_fan_state.supply_temperature != radio.new_fan_state.supply_temperature;
+    send(msgSupplyTEMP.set(temp_from_hex(radio.new_fan_state.supply_temperature), 1));
+    radio.current_fan_state.supply_temperature = radio.new_fan_state.supply_temperature;
   }
   if(radio.current_fan_state.indoor_temperature != radio.new_fan_state.indoor_temperature)
   {
-    temperature = (radio.new_fan_state.indoor_temperature/100.0);
-    send(msgIndoorTEMP.set(temperature, 1));
-    radio.current_fan_state.indoor_temperature != radio.new_fan_state.indoor_temperature;
+    send(msgIndoorTEMP.set(temp_from_hex(radio.new_fan_state.indoor_temperature), 1));
+    radio.current_fan_state.indoor_temperature = radio.new_fan_state.indoor_temperature;
   }
   if(radio.current_fan_state.outdoor_temperature != radio.new_fan_state.outdoor_temperature)
   {
-    temperature = (radio.new_fan_state.outdoor_temperature/100.0);
-    send(msgOutdoorTEMP.set(temperature, 1));
-    radio.current_fan_state.outdoor_temperature != radio.new_fan_state.outdoor_temperature;
+    send(msgOutdoorTEMP.set(temp_from_hex(radio.new_fan_state.outdoor_temperature), 1));
+    radio.current_fan_state.outdoor_temperature = radio.new_fan_state.outdoor_temperature;
   }  
   if(radio.current_fan_state.bypass_position != radio.new_fan_state.bypass_position)
   {
     send(msgBypassPOS.set(radio.new_fan_state.bypass_position));
-    radio.current_fan_state.bypass_position != radio.new_fan_state.bypass_position;
+    radio.current_fan_state.bypass_position = radio.new_fan_state.bypass_position;
   }  
   if(radio.current_fan_state.exhaust_fanspeed != radio.new_fan_state.exhaust_fanspeed)
   {
     send(msgExhaustFAN.set(radio.new_fan_state.exhaust_fanspeed));
-    radio.current_fan_state.exhaust_fanspeed != radio.new_fan_state.exhaust_fanspeed;
+    radio.current_fan_state.exhaust_fanspeed = radio.new_fan_state.exhaust_fanspeed;
   }    
   if(radio.current_fan_state.supply_fanspeed != radio.new_fan_state.supply_fanspeed)
   {
     send(msgSupplyFAN.set(radio.new_fan_state.supply_fanspeed));
-    radio.current_fan_state.supply_fanspeed != radio.new_fan_state.supply_fanspeed;
+    radio.current_fan_state.supply_fanspeed = radio.new_fan_state.supply_fanspeed;
   }   
 
   if(radio.current_fan_state.supply_flow != radio.new_fan_state.supply_flow)
@@ -243,19 +249,10 @@ void loop()
       send(msgCloneSwitch.set(0));
       send(msgFANspeed.set(0));
       send(msgFANstate.set(0));
-      send(msgIndoorHUM.set(0));
-      send(msgOutdoorHUM.set(0));
-      send(msgExhaustTEMP.set(0));
-      send(msgSupplyTEMP.set(0));
-      send(msgIndoorTEMP.set(0));
-      send(msgOutdoorTEMP.set(0));
-      send(msgBypassPOS.set(0));
-      send(msgExhaustFAN.set(0));
-      send(msgSupplyFAN.set(0));
-      send(msgSupplyFLOW.set(0));
-      send(msgExhaustFLOW.set(0));
-      send(msgBypassMODE.set(0));
-
+      
+      send(msgBypassMODE_VAL.set(1)); // 1 = Auto
+      send(msgBypassMODE_STATE.set(1)); // 1 = on
+      
       // Check communication with Radio chip
       if ((radio.readReg(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & 0x1f) == 1)
       {
@@ -437,10 +434,11 @@ void receive(const MyMessage &message)
 
   if(message.getSensor() == CHILD_ID_BYPASS_MODE)  // BYPASS MODE
   {
-    if (message.getType() == V_VAR1)
+    if (message.getType() == V_PERCENTAGE)
     {
-      fan_bypass_mode_req = constrain(message.getInt(), 0, 2);      
-      update_bypass_mode(fan_bypass_mode_req);
+      uint8_t temp_var = constrain(message.getInt(), 1, 3);
+      update_bypass_mode(temp_var);
+      fan_bypass_mode_req = temp_var-1; // to match array indexes
     }
   }
 
@@ -498,7 +496,7 @@ void sendNewTargetAddressToGateway()
 
 void update_bypass_mode(int16_t bypass_mode)
 {
-  send(msgBypassMODE.set(bypass_mode));
+  send(msgBypassMODE_VAL.set(bypass_mode));
 }
 
 void update_fan_speed(int16_t speed_level)

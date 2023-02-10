@@ -260,7 +260,7 @@ class CC1101
 	};
 	
 	codes msg_id[3];	
-	uint8_t bypass_code[3] = {0xC8, 0x00, 0xFF}; // open, close, auto
+	uint8_t bypass_code[3] = {0xFF, 0xC8, 0x00}; // auto, open, close
 
   public:
 
