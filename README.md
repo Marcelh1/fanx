@@ -4,4 +4,4 @@
 
 ![Preview](https://github.com/Marcelh1/fanx/blob/main/images/preview_animation.gif)
 
-![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Sensors.png)
+![Preview](https://github.com/Marcelh1/fanx/blob/main/images/Entities.png)
