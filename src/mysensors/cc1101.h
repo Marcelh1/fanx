@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+//#define DEBUG_MODE
+
 enum CFREQ
 {
   CFREQ_868 = 0,
@@ -22,6 +24,7 @@ enum RFSTATE
 
 #define PAIR_TIME_OUT   5000   // ms
 #define RX_TIME_OUT     300    // ms
+#define TX_REQ_CNTS     12     // xx times tx msg will be sent before decided to skip msg ids
 
 #define MODE_LOW_SPEED  0x01  // RF speed = 4800 bps (default is 38 Kbps)
 #define NUMBER_OF_FCHANNELS      10
@@ -241,25 +244,50 @@ class CC1101
     uint8_t *manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *test_arr);
     bool transmit_data(uint8_t payload[], uint8_t len);
     uint8_t calc_crc(uint8_t dataframe[], uint8_t len);
+	
+	enum codes_enum
+	{
+		fan_speed,
+		indoor_hum,
+		fan_info
+	};
+	
+	struct codes
+	{
+		uint16_t code_id;
+		bool rx_flag;
+	};
+	
+	codes msg_id[3];	
 
   public:
 
     struct datapoints
     {
       uint8_t fan_speed;
-      uint8_t humidity;
-      uint8_t airflow;
-      uint8_t temperature;
+      uint8_t indoor_humidity;
+	  uint8_t outdoor_humidity;
+	  uint16_t exhaust_temperature;
+	  uint16_t supply_temperature;
+	  uint16_t indoor_temperature;
+	  uint16_t outdoor_temperature;	  
+	  uint8_t bypass_position;
+	  uint8_t exhaust_fanspeed;
+	  uint8_t supply_fanspeed;
+	  uint16_t exhaust_flow;
+	  uint16_t supply_flow;
+	  
       uint8_t address[6];
     };
 
-    datapoints orcon_state;
+    datapoints new_fan_state;
+	datapoints current_fan_state;
 
     CC1101(void);
     void cmdStrobe(uint8_t cmd);
     void wakeUp(void);
-    bool tx_orcon(uint8_t fan_speed);
-    uint8_t request_orcon_state(void);
+    bool tx_fanspeed(uint8_t fan_speed);
+    uint8_t request_fan_state(void);
     uint8_t readReg(uint8_t regAddr, uint8_t regType);
     void writeReg(uint8_t regAddr, uint8_t value);
     void config_registers(void);

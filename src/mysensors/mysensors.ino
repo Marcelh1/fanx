@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <avr/wdt.h>
 #include "cc1101.h"
-#define ONBOARD_LED                 7
-#define ORCON_INTERVAL              5000  // RF link interval
-#define LED_FLASH_TIME              25  // ms
-#define TX_RETRY_CNT                5  // x
+#define ONBOARD_LED               7
+#define FAN_INTERVAL              5000  // RF link interval
+#define LED_FLASH_TIME            25  // ms
+#define TX_RETRY_CNT              5  // x
 
 enum module_states
 {
@@ -18,7 +18,7 @@ CC1101 radio;
 
 // Enable serial gateway
 #define MY_GATEWAY_SERIAL
-#define MY_BAUD_RATE                38400
+#define MY_BAUD_RATE                38400 // Do not change, limitation by frequency (crystal)
 
 //#define MY_DEBUG
 #include <MySensors.h>
@@ -27,19 +27,45 @@ CC1101 radio;
 #define CHILD_ID_TARGET_ADDRESS     3
 #define CHILD_ID_SOURCE_ADDRESS     4
 
+#define CHILD_ID_INDOOR_HUM         5
+#define CHILD_ID_OUTDOOR_HUM        6
+#define CHILD_ID_EXHAUST_TEMP       7
+#define CHILD_ID_SUPPLY_TEMP        8
+#define CHILD_ID_BYPASS_POS         9
+#define CHILD_ID_EXHAUST_FANSPEED   10
+#define CHILD_ID_SUPPLY_FANSPEED    11
+#define CHILD_ID_SUPPLY_FLOW        12
+#define CHILD_ID_EXHAUST_FLOW       13
+#define CHILD_ID_INDOOR_TEMP        14
+#define CHILD_ID_OUTDOOR_TEMP       15
+
 #define SN                          "FanX"
-#define SV                          "1.1"
+#define SV                          "1.7"
 
 MyMessage msgSourceAddress(CHILD_ID_TARGET_ADDRESS, V_VAR1);
 MyMessage msgTargetAddress(CHILD_ID_SOURCE_ADDRESS, V_VAR1);
-
 MyMessage msgCloneSwitch(CHILD_ID_CLONE, V_STATUS);
-
 MyMessage msgFANspeed(CHILD_ID_FAN, V_PERCENTAGE);
 MyMessage msgFANstate(CHILD_ID_FAN, V_STATUS);
 
+MyMessage msgIndoorHUM(CHILD_ID_INDOOR_HUM, V_HUM);
+MyMessage msgOutdoorHUM(CHILD_ID_OUTDOOR_HUM, V_HUM);
+
+MyMessage msgExhaustTEMP(CHILD_ID_EXHAUST_TEMP, V_TEMP);
+MyMessage msgSupplyTEMP(CHILD_ID_SUPPLY_TEMP, V_TEMP);
+
+MyMessage msgIndoorTEMP(CHILD_ID_INDOOR_TEMP, V_TEMP);
+MyMessage msgOutdoorTEMP(CHILD_ID_OUTDOOR_TEMP, V_TEMP);
+
+MyMessage msgBypassPOS(CHILD_ID_BYPASS_POS, V_VAR1);
+
+MyMessage msgExhaustFAN(CHILD_ID_EXHAUST_FANSPEED, V_VAR1);
+MyMessage msgSupplyFAN(CHILD_ID_SUPPLY_FANSPEED, V_VAR1);
+
+MyMessage msgSupplyFLOW(CHILD_ID_SUPPLY_FLOW, V_VAR1);
+MyMessage msgExhaustFLOW(CHILD_ID_EXHAUST_FLOW, V_VAR1);
+
 volatile int fan_speed_req = 1;
-volatile int fan_speed = 1;
 volatile int prev_fan_speed = 0;
 
 module_states dongle_state = JUST_BOOTED;
@@ -56,11 +82,10 @@ void setup()
   // Setup locally attached sensors
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, HIGH);
-
-  Serial1.begin(38400); // used for transmitting data to Orcon
+  Serial1.begin(38400); // used for transmitting data to FAN
   while (!Serial1);
-
-  wdt_enable(WDTO_8S);
+  radio.current_fan_state.fan_speed = 1;
+  wdt_enable(WDTO_8S);  
 }
 
 void before()
@@ -76,6 +101,22 @@ void presentation()
   present(CHILD_ID_CLONE, S_BINARY, "Clone switch");
   present(CHILD_ID_TARGET_ADDRESS, S_CUSTOM, "Target address");
   present(CHILD_ID_SOURCE_ADDRESS, S_CUSTOM, "Source address");
+
+  present(CHILD_ID_INDOOR_HUM, S_HUM, "Indoor humidity (%)");
+  present(CHILD_ID_OUTDOOR_HUM, S_HUM, "Outdoor humidity (%)");  
+  present(CHILD_ID_EXHAUST_TEMP, S_TEMP, "Exhaust temperature (ºC)");
+  present(CHILD_ID_SUPPLY_TEMP, S_TEMP, "Supply temperature (ºC)");
+
+  present(CHILD_ID_BYPASS_POS, S_CUSTOM, "Bypass position (%)");
+  present(CHILD_ID_EXHAUST_FANSPEED, S_CUSTOM, "Exhaust FAN (%)");
+  present(CHILD_ID_SUPPLY_FANSPEED, S_CUSTOM, "Supply FAN (%)");  
+  
+  present(CHILD_ID_SUPPLY_FLOW, S_CUSTOM, "Supply flow (m3/h)");
+  present(CHILD_ID_EXHAUST_FLOW, S_CUSTOM, "Exhaust flow (m3/h)");
+
+  present(CHILD_ID_INDOOR_TEMP, S_TEMP, "Indoor temperature (ºC)");
+  present(CHILD_ID_OUTDOOR_TEMP, S_TEMP, "Outdoor temperature (ºC)");  
+
 }
 
 //******************************************************************************************//
@@ -92,6 +133,86 @@ void led_flash(uint8_t flash_cnt)
     digitalWrite(ONBOARD_LED, HIGH); // RADIO LED OFF
     wait(LED_FLASH_TIME * 2);
   }
+}
+
+//******************************************************************************************//
+//                                                                                          //
+//                        Update new params to controller                                   //
+//                                                                                          //
+//******************************************************************************************//
+
+float temp_from_hex(uint16_t hex_value)
+{
+  if(hex_value >= 32768)
+    return (hex_value - 65536)/100.0;
+  else
+    return (hex_value)/100.0;
+}
+
+void update_new_params()
+{
+  float flow;
+  
+  if(radio.current_fan_state.indoor_humidity != radio.new_fan_state.indoor_humidity)
+  {
+    send(msgIndoorHUM.set(radio.new_fan_state.indoor_humidity));
+    radio.current_fan_state.indoor_humidity = radio.new_fan_state.indoor_humidity;                
+  }
+  if(radio.current_fan_state.outdoor_humidity != radio.new_fan_state.outdoor_humidity)
+  {
+    send(msgOutdoorHUM.set(radio.new_fan_state.outdoor_humidity));
+    radio.current_fan_state.outdoor_humidity = radio.new_fan_state.outdoor_humidity;                
+  }
+  if(radio.current_fan_state.exhaust_temperature != radio.new_fan_state.exhaust_temperature)
+  {
+    send(msgExhaustTEMP.set(temp_from_hex(radio.new_fan_state.exhaust_temperature), 1));
+    radio.current_fan_state.exhaust_temperature = radio.new_fan_state.exhaust_temperature;
+  }
+  if(radio.current_fan_state.supply_temperature != radio.new_fan_state.supply_temperature)
+  {
+    send(msgSupplyTEMP.set(temp_from_hex(radio.new_fan_state.supply_temperature), 1));
+    radio.current_fan_state.supply_temperature = radio.new_fan_state.supply_temperature;
+  }
+  if(radio.current_fan_state.indoor_temperature != radio.new_fan_state.indoor_temperature)
+  {
+    send(msgIndoorTEMP.set(temp_from_hex(radio.new_fan_state.indoor_temperature), 1));
+    radio.current_fan_state.indoor_temperature = radio.new_fan_state.indoor_temperature;
+  }
+  if(radio.current_fan_state.outdoor_temperature != radio.new_fan_state.outdoor_temperature)
+  {
+    send(msgOutdoorTEMP.set(temp_from_hex(radio.new_fan_state.outdoor_temperature), 1));
+    radio.current_fan_state.outdoor_temperature = radio.new_fan_state.outdoor_temperature;
+  }  
+  if(radio.current_fan_state.bypass_position != radio.new_fan_state.bypass_position)
+  {
+    send(msgBypassPOS.set(radio.new_fan_state.bypass_position));
+    radio.current_fan_state.bypass_position = radio.new_fan_state.bypass_position;
+  }  
+  if(radio.current_fan_state.exhaust_fanspeed != radio.new_fan_state.exhaust_fanspeed)
+  {
+    send(msgExhaustFAN.set(radio.new_fan_state.exhaust_fanspeed));
+    radio.current_fan_state.exhaust_fanspeed = radio.new_fan_state.exhaust_fanspeed;
+  }    
+  if(radio.current_fan_state.supply_fanspeed != radio.new_fan_state.supply_fanspeed)
+  {
+    send(msgSupplyFAN.set(radio.new_fan_state.supply_fanspeed));
+    radio.current_fan_state.supply_fanspeed = radio.new_fan_state.supply_fanspeed;
+  }   
+
+  if(radio.current_fan_state.supply_flow != radio.new_fan_state.supply_flow)
+  {
+    flow = ((radio.new_fan_state.supply_flow/100.0)*3.6); // l/s => m3/h
+    send(msgSupplyFLOW.set(flow, 1));
+    radio.current_fan_state.supply_flow != radio.new_fan_state.supply_flow;
+  } 
+
+  if(radio.current_fan_state.exhaust_flow != radio.new_fan_state.exhaust_flow)
+  {
+    flow = ((radio.new_fan_state.exhaust_flow/100.0)*3.6); // l/s => m3/h
+    send(msgExhaustFLOW.set(flow, 1));
+    radio.current_fan_state.exhaust_flow != radio.new_fan_state.exhaust_flow;
+  }   
+
 }
 
 //******************************************************************************************//
@@ -120,7 +241,7 @@ void loop()
       send(msgCloneSwitch.set(0));
       send(msgFANspeed.set(0));
       send(msgFANstate.set(0));
-
+            
       // Check communication with Radio chip
       if ((radio.readReg(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & 0x1f) == 1)
       {
@@ -129,8 +250,8 @@ void loop()
 
         for (int i = 0; i < 6; i++)
         {
-          radio.orcon_state.address[i] = loadState(i);
-          if (radio.orcon_state.address[i] != 0xFF) empty_eeprom = false;
+          radio.new_fan_state.address[i] = loadState(i);
+          if (radio.new_fan_state.address[i] != 0xFF) empty_eeprom = false;
         }
                 
         if (empty_eeprom)
@@ -157,7 +278,7 @@ void loop()
       {
         // Store in EEPROM via MySensors function saveState
         for (int i = 0; i < 6; i++)
-          saveState(i, radio.orcon_state.address[i]);
+          saveState(i, radio.new_fan_state.address[i]);
 
         // Update Gateway
         sendNewSourceAddressToGateway();
@@ -185,65 +306,71 @@ void loop()
 
     case (NORMAL_MODE):
 
-      if (fan_speed != fan_speed_req)                          // Set new data or fan speed request?
+      if (radio.current_fan_state.fan_speed != fan_speed_req)                          // Set new data or fan speed request?
       {
         if (tx_retry_cntr < TX_RETRY_CNT)
         {
-          if (radio.tx_orcon(fan_speed_req))                    // Succes, blink led
+          if (radio.tx_fanspeed(fan_speed_req))                    // Succes, blink led
           {
             led_flash(1);
-            fan_speed = radio.orcon_state.fan_speed;            // If ok, current fan speed should match requested one
+            radio.current_fan_state.fan_speed = radio.new_fan_state.fan_speed;            // If ok, current fan speed should match requested one
           }
           tx_retry_cntr++;
         }
         else
-          fan_speed = fan_speed_req;                            // Forget about this session, maybe more succes next time?
+          radio.current_fan_state.fan_speed = fan_speed_req;                            // Forget about this session, maybe more succes next time?
       }
       else
       {
         tx_retry_cntr = 0; // reset cntr
 
-        // Request fan speed on regular interval ORCON_INTERVAL
+        // Request fan speed on regular interval FAN_INTERVAL
         req_current_millis = millis();
-        if((req_current_millis-prev_req_current_millis) > ORCON_INTERVAL)
+        if((req_current_millis-prev_req_current_millis) > FAN_INTERVAL)
         {
-          prev_req_current_millis += ORCON_INTERVAL;
+          prev_req_current_millis += FAN_INTERVAL;
 
-          if(radio.request_orcon_state())
+          if(radio.request_fan_state())
           {
             led_flash(1);
 
             if(first_run_flag)                                  // Update once on first boot
             {
-              fan_speed = radio.orcon_state.fan_speed;
-              fan_speed_req = fan_speed;                        // Prevent RF update next cycle
+              radio.current_fan_state.fan_speed = radio.new_fan_state.fan_speed;
+              fan_speed_req = radio.current_fan_state.fan_speed;                        // Prevent RF update next cycle
               
-              if(fan_speed == 0)
+              if(radio.current_fan_state.fan_speed == 0)
                 update_fan_state(0);
               else
                 update_fan_state(1);
               
-              update_fan_speed(fan_speed);                
+              update_fan_speed(radio.current_fan_state.fan_speed);                
               
               first_run_flag = false;              
             }
-            else if(fan_speed != radio.orcon_state.fan_speed)   // FAN SPEED CHANGED
+            else 
             {
-              if(radio.orcon_state.fan_speed == 0)              // DETERMINE TO REPORT FAN STATE CHANGE OF SPEED CHANGE TO CONTROLLER
+              update_new_params(); // update changed params to controller
+             
+              // FAN SPEED CHANGE
+              if(radio.current_fan_state.fan_speed != radio.new_fan_state.fan_speed)   // FAN SPEED CHANGED
               {
-                prev_fan_speed = fan_speed;
-                fan_speed = radio.orcon_state.fan_speed;
-                fan_speed_req = fan_speed;                      // Prevent RF update next cycle              
-                update_fan_state(0);
-              }
-              else
-              {
-                if(fan_speed == 0)                              // Fan is off, new value != 0, therefore: send once V_STATUS = TRUE
-                  update_fan_state(1);                
-  
-                fan_speed = radio.orcon_state.fan_speed;
-                fan_speed_req = fan_speed;                      // Prevent RF update next cycle
-                update_fan_speed(fan_speed);
+                if(radio.new_fan_state.fan_speed == 0)              // DETERMINE TO REPORT FAN STATE CHANGE OF SPEED CHANGE TO CONTROLLER
+                {
+                  prev_fan_speed = radio.current_fan_state.fan_speed;
+                  radio.current_fan_state.fan_speed = radio.new_fan_state.fan_speed;
+                  fan_speed_req = radio.current_fan_state.fan_speed;                      // Prevent RF update next cycle              
+                  update_fan_state(0);
+                }
+                else
+                {
+                  if(radio.current_fan_state.fan_speed == 0)                              // Fan is off, new value != 0, therefore: send once V_STATUS = TRUE
+                    update_fan_state(1);                
+    
+                  radio.current_fan_state.fan_speed = radio.new_fan_state.fan_speed;
+                  fan_speed_req = radio.current_fan_state.fan_speed;                      // Prevent RF update next cycle
+                  update_fan_speed(radio.current_fan_state.fan_speed);
+                }
               }
             }
           }
@@ -286,30 +413,23 @@ void receive(const MyMessage &message)
     {
       if(!message.getBool())               // FAN OFF
       {
-        prev_fan_speed = fan_speed;        // STORE FAN SPEED (FOR ONLY RECEIVING "V_STATUS = TRUE" NEXT TIME)
-        fan_speed_req = 0;                 // SEND "0" TO ORCON
+        prev_fan_speed = radio.current_fan_state.fan_speed;        // STORE FAN SPEED (FOR ONLY RECEIVING "V_STATUS = TRUE" NEXT TIME)
+        fan_speed_req = 0;                 // SEND "0" TO FAN
         update_fan_state(0);               // REPORT STATE BACK TO CONTROLLER        
       }
       else
       {
-        fan_speed_req = prev_fan_speed;    // SET BACK FAN SPEED TO ORCON ONLY
+        fan_speed_req = prev_fan_speed;    // SET BACK FAN SPEED TO FAN ONLY
         update_fan_state(1);               // REPORT BACK TO CONTROLLER
       }   
-      
     }
 
     if (message.getType() == V_PERCENTAGE)
     {
-      fan_speed_req = constrain( message.getInt(), 0, 100 );
-      fan_speed_req = min(fan_speed_req, 4);      // Limit to 4
-      fan_speed_req = max(fan_speed_req, 0);      // >= 0
-      
+      fan_speed_req = constrain(message.getInt(), 0, 4);     
       update_fan_speed(fan_speed_req);
     }
-
-  }
-  
-
+  } 
 }
 
 //******************************************************************************************//
@@ -320,7 +440,7 @@ void receive(const MyMessage &message)
 void sendNewSourceAddressToGateway()
 {
   // Ramses II format
-  uint32_t source_address = ((uint32_t)radio.orcon_state.address[3]<<16) | ((uint32_t)radio.orcon_state.address[4]<<8) | ((uint32_t)radio.orcon_state.address[5]<<0);
+  uint32_t source_address = ((uint32_t)radio.new_fan_state.address[3]<<16) | ((uint32_t)radio.new_fan_state.address[4]<<8) | ((uint32_t)radio.new_fan_state.address[5]<<0);
   uint8_t device_id = ((source_address & 0xFC0000)>>18);
   uint32_t address_id = source_address & 0x03FFFF;  
   String result_string = String(device_id) + ":" + String(address_id);
@@ -331,7 +451,7 @@ void sendNewSourceAddressToGateway()
 void sendNewTargetAddressToGateway()
 {
   // Ramses II format
-  uint32_t target_address = ((uint32_t)radio.orcon_state.address[0]<<16) | ((uint32_t)radio.orcon_state.address[1]<<8) | ((uint32_t)radio.orcon_state.address[2]<<0);
+  uint32_t target_address = ((uint32_t)radio.new_fan_state.address[0]<<16) | ((uint32_t)radio.new_fan_state.address[1]<<8) | ((uint32_t)radio.new_fan_state.address[2]<<0);
   uint8_t device_id = ((target_address & 0xFC0000)>>18);
   uint32_t address_id = target_address & 0x03FFFF; 
   String result_string = String(device_id) + ":" + String(address_id);

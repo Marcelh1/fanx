@@ -89,7 +89,7 @@ void CC1101::config_registers(void)
 {
   reset();
 
-  // ########## BEGIN ORCON RF15 chip config ##########
+  // ########## BEGIN FAN RF15 chip config ##########
   setCarrierFreq(CFREQ_868);
   writeReg(CC1101_IOCFG0, CC1101_DEFVAL_IOCFG0);	// High impdance 3-state
   writeReg(CC1101_IOCFG2, CC1101_DEFVAL_IOCFG2);	// Lock detector
@@ -136,6 +136,12 @@ void CC1101::init(void)
 
   // Back to idle/power down
   setPowerDownState();
+
+  // Constants
+  msg_id[indoor_hum].code_id = 0x12A0;
+  msg_id[fan_speed].code_id = 0x22F1;
+  msg_id[fan_info].code_id = 0x31DA;
+
 }
 
 uint8_t CC1101::calc_crc(uint8_t dataframe[], uint8_t len)
@@ -154,93 +160,108 @@ uint8_t CC1101::calc_crc(uint8_t dataframe[], uint8_t len)
 
 bool CC1101::clone_mode(void)
 {
-  const uint8_t buff_lenght = 100;
+  const uint8_t buff_lenght = 75;
   uint8_t rx_buffer[buff_lenght];
+  uint8_t rbuf[buff_lenght];
+  int rlen = 0;  
   bool rf15_frame_valid = false;
   unsigned long previousMillis = 0;
   unsigned long currentMillis = 0;
   bool rx_abort_flag = false;
   bool header_detected_flag = false;
-  uint8_t rx_frame_lenght = 0;
+
+  Serial1.setTimeout(RX_TIME_OUT);
+
+  // Clear input buffer
+  uint8_t temp_var;
+  while (Serial1.available())
+    temp_var = Serial1.read();
 
   previousMillis = millis();
 
-  while (!rf15_frame_valid && !rx_abort_flag)	// wait till both frames received, or timeout
+  // Process RX data
+  while (!rx_abort_flag) // RX complete or timeout
   {
-    // Handle timeout
-    currentMillis = millis();
-    if (currentMillis - previousMillis > PAIR_TIME_OUT)
-      rx_abort_flag = true;
-    else
+    if (!header_detected_flag)
     {
-      while ( (Serial1.available() > 0) && (!rf15_frame_valid) ) // Exit loop when frame recognised or timeout
+      while (Serial1.available() > 0)
       {
-        // Fifo buffer
-        for (uint8_t i = 0; i < buff_lenght - 1; i++)
+        for (uint8_t i = 0; i < 5; i++)
           rx_buffer[i] = rx_buffer[i + 1];
-        rx_buffer[buff_lenght - 1] = Serial1.read();
+        rx_buffer[5] = Serial1.read();
 
-        if (header_detected_flag)
+        if ( (rx_buffer[5] == 0x53) && (rx_buffer[4] == 0x55) && (rx_buffer[3] == 0x33) && (rx_buffer[2] == 0x00) && (rx_buffer[0] == 0x55))
         {
-          if (rx_frame_lenght < buff_lenght - 2)
-            rx_frame_lenght++;
-          else
+          header_detected_flag = true;
+          break;
+        }
+        else
+        {
+          currentMillis = millis();
+          if (currentMillis - previousMillis > PAIR_TIME_OUT)
           {
             rx_abort_flag = true;
             break;
           }
-
-          if (rx_buffer[buff_lenght - 1] == 0x35)	// FRAME COMPLETE!
-          {
-            uint8_t bof_frame = buff_lenght - rx_frame_lenght - 2;	// 100 - 27 - 2 => 71
-            uint8_t dataframe_encoded[buff_lenght - 1 - bof_frame];	// 100 - 71 => 28
-            uint8_t frame_decoded_lenght = ((buff_lenght - bof_frame) - 1) / 2;	// (100 - 71 - 1) / 2 => 14
-
-            // check if frame_decoded_lenght is even number
-            if ((((buff_lenght - bof_frame) - 1) % 2) != 0)
-            {
-              rx_abort_flag = true;
-              break;
-            }
-
-            uint8_t x = 0;
-            for (uint8_t i = bof_frame; i < buff_lenght - 1; i++)
-            {
-              dataframe_encoded[x] = rx_buffer[i];
-              x++;
-            }
-
-            uint8_t dataframe_decoded[frame_decoded_lenght];
-            manchester_decode(dataframe_encoded, rx_frame_lenght, dataframe_decoded);
-
-            // CRC check
-            if (calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght - 1])
-            {
-              // Clone and store RF15 address in EEPROM
-              for (uint8_t i = 1; i < 7; i++)
-                orcon_state.address[i - 1] = dataframe_decoded[i];
-
-              rf15_frame_valid = true;
-            }
-            else
-            {
-              rx_abort_flag = true;
-              break;
-            }
-          }
-        }
-        else
-        {
-          // Detect header from remote control
-          if ( (rx_buffer[99] == 0x5A) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00))
-            header_detected_flag = true;
         }
       }
     }
+    else
+    {
+      rlen = Serial1.readBytesUntil(0x35, rbuf, sizeof(rbuf) - 1); // read until 0x35 received or timeout
+      rx_abort_flag = true;
+    }
   }
 
-  return rf15_frame_valid;
+  // Process data
+  if ( (rlen == 0) || (rlen == 100)) // No valid data
+  {
+	#ifdef DEBUG_MODE
+		if (!header_detected_flag)
+		  Serial.println("> Error: no header detected!");
+		else
+		  Serial.println("> header detected, but no valid data!");
+	#endif
 
+  }
+  else
+  {
+	  // check if encoded number of bytes is even number
+    if ((rlen % 2) != 0)
+	{
+	  #ifdef DEBUG_MODE
+        Serial.println("> Error: not even number, problaby corrupted msg, problematic for decoding");
+	  #endif
+    }
+	else
+    {
+      uint8_t dataframe_decoded[rlen / 2];
+      manchester_decode(rbuf, rlen, dataframe_decoded);
+
+      #ifdef DEBUG_MODE
+		  Serial.print("> RX decoded data used for cloning: ");
+		  for (int i = 0; i < rlen / 2; i++)
+		  {
+			Serial.print(dataframe_decoded[i], HEX);
+			Serial.print(" ");
+		  }
+		  Serial.print(" | ");
+	  #endif
+	  
+      // CRC check
+      if (calc_crc(dataframe_decoded, rlen / 2) == dataframe_decoded[(rlen / 2) - 1])
+      {
+		  // Clone and store RF15 address in EEPROM
+		  for (uint8_t i = 1; i < 7; i++)
+			new_fan_state.address[i - 1] = dataframe_decoded[i];		  
+		rf15_frame_valid = true;
+	  }
+	}
+	
+  }
+  
+  return rf15_frame_valid;
+  
 }
 
 uint8_t *CC1101::manchester_decode(uint8_t rx_buff[], uint8_t len, uint8_t *rx_payload)
@@ -290,13 +311,14 @@ uint8_t *CC1101::manchester_encode(uint8_t tx_buff[], uint8_t len, uint8_t *payl
 
 bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
 {
-  bool orcon_frame_valid = false;
+  bool fan_frame_valid = false;
   const uint8_t buff_lenght = 100;
-  uint8_t rx_buffer[buff_lenght];
-  uint8_t tx_buffer[buff_lenght];
+  uint8_t rx_buffer[6];
+  uint8_t rbuf[buff_lenght];
+  int rlen = 0;
   bool header_detected_flag = false;
   uint8_t tx_frame_lenght = (len * 2) + 15;	// 15 bytes overhead, len*2 data
-  uint8_t rx_frame_lenght = 0;
+  uint8_t tx_buffer[tx_frame_lenght];
   uint8_t tx_payload_encoded[len * 2];
 
   unsigned long previousMillis = 0;
@@ -323,11 +345,18 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   // EOF
   tx_buffer[tx_frame_lenght - 1] = 0x35;
 
-  config_registers();	// Reconfigure CC1101
-  setTxState();
+  Serial1.setTimeout(RX_TIME_OUT);
 
+  config_registers();	// Reconfigure CC1101
+
+  setTxState();
   Serial1.write(tx_buffer, tx_frame_lenght);
   Serial1.flush();	// wait for Serial TX data completed
+
+  // Clear input buffer, might be filled with TX data, since RX and TX pin are connected
+  uint8_t temp_var;
+  while (Serial1.available())
+    temp_var = Serial1.read();
 
   // Config GDO0 to ouput
   cmdStrobe(CC1101_SIDLE);
@@ -336,95 +365,140 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   // Read serial data, variable frame lenght
   previousMillis = millis();
 
-  while (!orcon_frame_valid && !rx_abort_flag)	// wait till both frames received, or timeout
+  // Process RX data
+  while (!rx_abort_flag) // RX complete or timeout
   {
-    // Handle timeout
-    currentMillis = millis();
-    if (currentMillis - previousMillis > RX_TIME_OUT)
-      rx_abort_flag = true;
-    else
+    if (!header_detected_flag)
     {
-      while ((Serial1.available() > 0) && (!orcon_frame_valid)) // Exit loop when frame recognised
+      while (Serial1.available() > 0)
       {
-        // Fifo buffer
-        for (uint8_t i = 0; i < buff_lenght - 1; i++)
+        for (uint8_t i = 0; i < 5; i++)
           rx_buffer[i] = rx_buffer[i + 1];
-        rx_buffer[buff_lenght - 1] = Serial1.read();
+        rx_buffer[5] = Serial1.read();
 
-        if (header_detected_flag)
+        if ( (rx_buffer[5] == 0x53) && (rx_buffer[4] == 0x55) && (rx_buffer[3] == 0x33) && (rx_buffer[2] == 0x00) && (rx_buffer[0] == 0x55))
         {
-          if (rx_frame_lenght < buff_lenght - 2)
-            rx_frame_lenght++;
-          else
+          header_detected_flag = true;
+          break;
+        }
+        else
+        {
+          currentMillis = millis();
+          if (currentMillis - previousMillis > RX_TIME_OUT)
           {
             rx_abort_flag = true;
             break;
           }
-
-          if (rx_buffer[buff_lenght - 1] == 0x35)	// FRAME COMPLETE!
-          {
-            uint8_t bof_frame = buff_lenght - rx_frame_lenght - 2;	// 100 - 27 - 2 => 71
-            uint8_t dataframe_encoded[buff_lenght - 1 - bof_frame];	// 100 - 71 => 28
-            uint8_t frame_decoded_lenght = ((buff_lenght - bof_frame) - 1) / 2;	// (100 - 71 - 1) / 2 => 14
-
-            // check if encoded number of bytes is even number
-            if ((((buff_lenght - bof_frame) - 1) % 2) != 0)
-            {
-              rx_abort_flag = true;
-              break;
-            }
-
-            uint8_t x = 0;
-            for (uint8_t i = bof_frame; i < buff_lenght - 1; i++)
-            {
-              dataframe_encoded[x] = rx_buffer[i];
-              x++;
-            }
-
-            uint8_t dataframe_decoded[frame_decoded_lenght];
-            manchester_decode(dataframe_encoded, rx_frame_lenght, dataframe_decoded);
-
-            // CRC check
-            if (calc_crc(dataframe_decoded, frame_decoded_lenght) == dataframe_decoded[frame_decoded_lenght - 1])
-            {
-              // Check address!
-              orcon_frame_valid = true;
-              for (uint8_t i = 4; i < 7; i++)
-              {
-                if (dataframe_decoded[i] != orcon_state.address[i - 1])
-                  orcon_frame_valid = false;
-              }
-
-              if (orcon_frame_valid)	// Update states
-              {
-                // Scan for 31D9 message + 5 positions = fan speed
-                // This enabled support for HRC400 as well
-                for (uint8_t i = 0; i < frame_decoded_lenght - 1; i++)
-                {
-                  if ( (dataframe_decoded[i] == 0x31) && (dataframe_decoded[i + 1] == 0xD9) ) // Position found!
-                    orcon_state.fan_speed = dataframe_decoded[i + 5];
-                }
-              }
-              else
-              {
-                rx_abort_flag = true;
-                break;
-              }
-            }
-            else
-            {
-              rx_abort_flag = true;
-              break;
-            }
-          }
-        }
-        else
-        {
-          // Accept 0x6A (MVS15) and 0x66 (HRC400)
-          if ( ((rx_buffer[99] == 0x6A) || (rx_buffer[99] == 0x66)) && (rx_buffer[98] == 0xA9) && (rx_buffer[97] == 0x53) && (rx_buffer[96] == 0x55) && (rx_buffer[95] == 0x33) && (rx_buffer[94] == 0x00))
-            header_detected_flag = true;
         }
       }
+    }
+    else
+    {
+      rlen = Serial1.readBytesUntil(0x35, rbuf, sizeof(rbuf) - 1); // read until 0x35 received or timeout
+      rx_abort_flag = true;
+    }
+  }
+
+  // Process data
+  if ( (rlen == 0) || (rlen == 100)) // No valid data
+  {
+	#ifdef DEBUG_MODE
+	if (!header_detected_flag)
+	  Serial.println("> Error: no header detected!");
+	else
+	  Serial.println("> header detected, but no valid data!");
+	#endif
+  }
+  else
+  {
+    // check if encoded number of bytes is even number
+    if ((rlen % 2) != 0)
+	{
+      #ifdef DEBUG_MODE
+	  Serial.println("> Error: not even number, problaby corrupted msg, problematic for decoding");
+	  #endif
+    }
+	else
+    {
+      uint8_t dataframe_decoded[rlen / 2];
+      manchester_decode(rbuf, rlen, dataframe_decoded);
+
+      #ifdef DEBUG_MODE
+	  Serial.print("> RX decoded data: ");
+	  for (int i = 0; i < rlen / 2; i++)
+	  {
+		Serial.print(dataframe_decoded[i], HEX);
+		Serial.print(" ");
+	  }
+	  Serial.print(" | ");
+	  #endif
+	  
+      // CRC check
+      if (calc_crc(dataframe_decoded, rlen / 2) == dataframe_decoded[(rlen / 2) - 1])
+      {
+        // Check address!
+        fan_frame_valid = true;
+        for (uint8_t i = 1; i < 4; i++)
+        {
+          if (dataframe_decoded[i] != new_fan_state.address[i + 2])
+            fan_frame_valid = false;
+        }
+
+        if (fan_frame_valid)	// Update states
+        {
+		  uint16_t param_type = ((uint16_t)dataframe_decoded[7]<<8) | (uint16_t)(dataframe_decoded[8]);
+		  uint8_t param_lenght = dataframe_decoded[9];
+			
+          if ( (param_type == 0x22F1) && (param_lenght == 0x03) )	// FAN SPEED
+          {
+            new_fan_state.fan_speed = dataframe_decoded[11];
+            msg_id[fan_speed].rx_flag = true;
+          }          
+          if (param_type == 0x31D9)	// FAN SPEED, don't check for lenght, might differ from MVS and HRC
+          {
+            new_fan_state.fan_speed = dataframe_decoded[12];
+            msg_id[fan_speed].rx_flag = true;
+          }		
+		  if ( (param_type == 0x12A0) && (param_lenght == 0x02) )	// Humidity
+          {
+            new_fan_state.indoor_humidity = dataframe_decoded[11];
+            msg_id[indoor_hum].rx_flag = true;
+          }
+		  if ( (param_type == 0x31DA) && (param_lenght == 0x1E) )	// EXTENDED 31DA INFO
+          {
+            new_fan_state.indoor_humidity = dataframe_decoded[15];
+			new_fan_state.outdoor_humidity = dataframe_decoded[16];			
+			new_fan_state.exhaust_temperature = (dataframe_decoded[17]*256)+dataframe_decoded[18];			
+			new_fan_state.supply_temperature = (dataframe_decoded[19]*256)+dataframe_decoded[20];
+			new_fan_state.indoor_temperature = (dataframe_decoded[21]*256)+dataframe_decoded[22];			
+			new_fan_state.outdoor_temperature = (dataframe_decoded[23]*256)+dataframe_decoded[24];			
+			new_fan_state.bypass_position = dataframe_decoded[27];			
+			new_fan_state.exhaust_fanspeed = dataframe_decoded[29];			
+			new_fan_state.supply_fanspeed = dataframe_decoded[30];			
+			new_fan_state.supply_flow = (dataframe_decoded[35]*256)+dataframe_decoded[36];
+			new_fan_state.exhaust_flow = (dataframe_decoded[37]*256)+dataframe_decoded[38];
+			
+            msg_id[fan_info].rx_flag = true;
+          }
+
+          #ifdef DEBUG_MODE
+			Serial.println("Data ok!");
+		  #endif
+        }
+        else
+		{
+          #ifdef DEBUG_MODE
+   		    Serial.println("Valid message, wrong address!");
+		  #endif
+			
+		}
+      }
+      else
+	  {
+	    #ifdef DEBUG_MODE
+          Serial.println("CRC ERROR!");
+		#endif
+	  }
     }
   }
 
@@ -433,10 +507,10 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
   writeReg(CC1101_IOCFG0, CC1101_DEFVAL_IOCFG0);
   setPowerDownState();
 
-  return orcon_frame_valid;
+  return fan_frame_valid;
 }
 
-bool CC1101::tx_orcon(uint8_t fan_speed)
+bool CC1101::tx_fanspeed(uint8_t fan_speed)
 {
   uint8_t payload[14];
   uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
@@ -446,7 +520,7 @@ bool CC1101::tx_orcon(uint8_t fan_speed)
 
   // Get souce and target address
   for (uint8_t i = 1; i < 7; i++)
-    payload[i] = orcon_state.address[i - 1];
+    payload[i] = new_fan_state.address[i - 1];
 
   // Opcode[FAN speed status]
   payload[7] = 0x22;
@@ -462,42 +536,53 @@ bool CC1101::tx_orcon(uint8_t fan_speed)
 
   payload[ARR_SIZE - 1] = calc_crc(payload, ARR_SIZE);
 
+#ifdef DEBUG_MODE
+  Serial.println("Set fan speed");
+#endif
+
   // Returns bool
   return transmit_data(payload, ARR_SIZE);
 
 }
 
-uint8_t CC1101::request_orcon_state(void)
+uint8_t CC1101::request_fan_state(void)
 {
-
-  uint8_t payload[19];
-  uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
-
   // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
-  payload[0] = 0x1C;
+  uint8_t payload[12] = {0x0C, new_fan_state.address[0], new_fan_state.address[1], new_fan_state.address[2], new_fan_state.address[3], new_fan_state.address[4], new_fan_state.address[5], 0x00, 0x00, 0x01, 0x00, 0x00};
+  uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
+  static uint8_t tx_cntr = 0;
+  static uint8_t req_cntr = 0;
 
-  // Get souce and target address
-  for (uint8_t i = 1; i < 7; i++)
-    payload[i] = orcon_state.address[i - 1];
+  static uint8_t req_pointer[3] = {fan_speed, indoor_hum, fan_info}; // Init request array
 
-  // Opcode[FAN speed status]
-  payload[7] = 0x31;
-  payload[8] = 0xE0;
-
-  // Command lenght
-  payload[9] = 0x08;
-
-  // Payload
-  payload[10] = 0x00;
-  payload[11] = 0x00;
-  payload[12] = 0x00;
-  payload[13] = 0x00;
-  payload[14] = 0x01;
-  payload[15] = 0x00;
-  payload[16] = 0x64;
-  payload[17] = 0x00;
+  payload[7] = (msg_id[req_pointer[tx_cntr]].code_id >> 8);
+  payload[8] = (msg_id[req_pointer[tx_cntr]].code_id & 0xFF);
 
   payload[ARR_SIZE - 1] = calc_crc(payload, ARR_SIZE);
+
+  // Determine next tx msg
+  if (req_cntr < TX_REQ_CNTS)
+  {
+    if (tx_cntr < sizeof(enum codes_enum))
+      tx_cntr++;
+    else
+      tx_cntr = 0;
+
+    req_cntr++;
+  }
+  else
+  {
+	req_pointer[0] = fan_speed;	
+	if(msg_id[fan_info].rx_flag)
+		req_pointer[1] = fan_info;
+	else
+	  req_pointer[1] = indoor_hum;
+	  
+	if (tx_cntr < sizeof(enum codes_enum)-1)
+	  tx_cntr++;
+	else
+	  tx_cntr = 0;    
+  }
 
   // Returns bool
   return transmit_data(payload, ARR_SIZE);
