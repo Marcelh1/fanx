@@ -453,21 +453,7 @@ bool CC1101::transmit_data(uint8_t payload[], uint8_t len)
           {
             new_fan_state.fan_speed = dataframe_decoded[11];
             msg_id[fan_speed].rx_flag = true;
-          }
-          
-		  if ( (param_type == 0x22F7) && (param_lenght == 0x03) )	// FAN BYPASS MODE
-          {			  
-			for(uint8_t i = 0; i < 3; i++)
-			{
-				if(bypass_code[i] == dataframe_decoded[11])
-				{
-					new_fan_state.bypass_mode = i;
-					break;
-				}
-			}
-            msg_id[bypass_mode].rx_flag = true;
-          }		  
-
+          }          
           if (param_type == 0x31D9)	// FAN SPEED, don't check for lenght, might differ from MVS and HRC
           {
             new_fan_state.fan_speed = dataframe_decoded[12];
@@ -552,42 +538,6 @@ bool CC1101::tx_fanspeed(uint8_t fan_speed)
 
 #ifdef DEBUG_MODE
   Serial.println("Set fan speed");
-#endif
-
-  // Returns bool
-  return transmit_data(payload, ARR_SIZE);
-
-}
-
-bool CC1101::tx_fan_bypass(uint8_t fan_bypass)
-{
-  uint8_t payload[14];
-  uint8_t ARR_SIZE = sizeof(payload) / sizeof(payload[0]);
-
-  // header[RQ = 0x0C, W = 0x1C, I = 0x2C, RP = 3C]
-  payload[0] = 0x1C;
-
-  // Get souce and target address
-  for (uint8_t i = 1; i < 7; i++)
-    payload[i] = new_fan_state.address[i - 1];
-
-  // Opcode[FAN speed status]
-  payload[7] = 0x22;
-  payload[8] = 0xF7;
-
-  // Command lenght
-  payload[9] = 0x03;
-
-  // Payload
-  payload[10] = 0x00;
-  payload[11] = bypass_code[fan_bypass];
-  payload[12] = 0xEF;
-
-  payload[ARR_SIZE - 1] = calc_crc(payload, ARR_SIZE);
-
-#ifdef DEBUG_MODE
-  Serial.print("Set bypass value: ");
-  Serial.println(bypass_code[fan_bypass]);
 #endif
 
   // Returns bool
