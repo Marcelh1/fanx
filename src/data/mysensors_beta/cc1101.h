@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 enum CFREQ
 {
@@ -249,7 +249,8 @@ class CC1101
 	{
 		fan_speed,
 		indoor_hum,
-		fan_info
+		fan_info,
+    bypass_mode
 	};
 	
 	struct codes
@@ -272,6 +273,7 @@ class CC1101
 	  uint16_t indoor_temperature;
 	  uint16_t outdoor_temperature;	  
 	  uint8_t bypass_position;
+    uint8_t bypass_mode;
 	  uint8_t exhaust_fanspeed;
 	  uint8_t supply_fanspeed;
 	  uint16_t exhaust_flow;
@@ -287,6 +289,7 @@ class CC1101
     void cmdStrobe(uint8_t cmd);
     void wakeUp(void);
     bool tx_fanspeed(uint8_t fan_speed);
+    bool set_bypass(uint8_t bypass_mode);
     uint8_t request_fan_state(void);
     uint8_t readReg(uint8_t regAddr, uint8_t regType);
     void writeReg(uint8_t regAddr, uint8_t value);
