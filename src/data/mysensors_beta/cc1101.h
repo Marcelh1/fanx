@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 enum CFREQ
 {
